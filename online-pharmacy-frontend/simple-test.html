@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Medicine Test</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script>
+        // Simplified version of what the frontend should do
+        const apiClient = axios.create({
+            baseURL: 'http://localhost:8080/api',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        // Add auth interceptor
+        apiClient.interceptors.request.use((config) => {
+            const token = localStorage.getItem('token');
+            if (token && config.headers) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        });
+
+        // Add response interceptor
+        apiClient.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                if (error.response?.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        // Fetch medicines like the frontend does
+        async function fetchMedicines() {
+            try {
+                const response = await apiClient.get('/catalog/medicines', { 
+                    params: { page: 0, size: 20 } 
+                });
+                // This is what the catalogApi does: extracts response.data.data
+                return response.data.data.content; // Array of medicines
+            } catch (error) {
+                console.error('Failed to fetch medicines:', error);
+                throw error;
+            }
+        }
+
+        // Render medicines like HomePage does
+        function renderMedicines(medicines) {
+            const root = document.getElementById('root');
+            
+            if (medicines.length === 0) {
+                root.innerHTML = '<p>No medicines found</p>';
+                return;
+            }
+            
+            const medicinesHTML = medicines.map(med => `
+                <div style="border: 1px solid #ccc; margin: 10px; padding: 10px; border-radius: 4px;">
+                    <h3>${med.name}</h3>
+                    <p>${med.description || ''}</p>
+                    <p>Price: ₹${med.price}</p>
+                    <p>Stock: ${med.stock} (${med.inStock ? 'In Stock' : 'Out of Stock'})</p>
+                </div>
+            `).join('');
+            
+            root.innerHTML = `<h1>Medicines (${medicines.length} found)</h1>${medicinesHTML}`;
+        }
+
+        // Fetch and render
+        fetchMedicines()
+            .then(medicines => {
+                console.log('Fetched medicines:', medicines);
+                renderMedicines(medicines);
+            })
+            .catch(error => {
+                document.getElementById('root').innerHTML = 
+                    `<p style="color: red;">Error loading medicines: ${error.message}</p>`;
+                console.error('Error:', error);
+            });
+    </script>
+</body>
+</html>

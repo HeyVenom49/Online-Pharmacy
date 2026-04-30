@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: pharmacy
+      POSTGRES_PASSWORD: pharmacy123
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  eureka:
+    build:
+      context: .
+      dockerfile: pharmacy-eureka/Dockerfile
+    ports:
+      - "8761:8761"
+
+  config:
+    build:
+      context: .
+      dockerfile: pharmacy-config/Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,native
+
+  identity:
+    build:
+      context: .
+      dockerfile: pharmacy-identity/Dockerfile
+    ports:
+      - "8081:8081"
+
+  catalog:
+    build:
+      context: .
+      dockerfile: pharmacy-catalog/Dockerfile
+    ports:
+      - "8082:8082"
+
+  orders:
+    build:
+      context: .
+      dockerfile: pharmacy-orders/Dockerfile
+    ports:
+      - "8083:8083"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: pharmacy-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+
+  admin:
+    build:
+      context: .
+      dockerfile: pharmacy-admin/Dockerfile
+    ports:
+      - "8084:8084"
+
+  notifications:
+    build:
+      context: .
+      dockerfile: pharmacy-notifications/Dockerfile
+    ports:
+      - "8085:8085"

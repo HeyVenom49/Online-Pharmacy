@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug: Medicine Display</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script>
+        // Simple test to verify the frontend logic works
+        console.log('Starting debug test...');
+        
+        // Create API client like in frontend
+        const apiClient = axios.create({
+            baseURL: 'http://localhost:8080/api',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        console.log('API Client created:', apiClient.defaults.baseURL);
+        
+        // Test the API directly first
+        async function testApi() {
+            try {
+                console.log('Testing API call...');
+                const response = await apiClient.get('/catalog/medicines', { 
+                    params: { page: 0, size: 20 } 
+                });
+                console.log('API Response received:', response.data);
+                return response.data; // This is the ApiResponse format
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+        
+        // Test if we can extract medicines from ApiResponse
+        async function testMedicineExtraction() {
+            try {
+                const apiResponse = await testApi();
+                console.log('ApiResponse structure:', {
+                    success: apiResponse.success,
+                    message: apiResponse.message,
+                    hasData: !!apiResponse.data,
+                    contentLength: apiResponse.data?.content?.length || 0
+                });
+                
+                if (apiResponse.success && apiResponse.data && apiResponse.data.content) {
+                    const medicines = apiResponse.data.content;
+                    console.log(`Extracted ${medicines.length} medicines`);
+                    
+                    // Display them
+                    const root = document.getElementById('root');
+                    root.innerHTML = `
+                        <h1>Medicines Debug Test</h1>
+                        <p>Successfully loaded ${medicines.length} medicines from API</p>
+                        <div style="margin-top: 20px;">
+                            ${medicines.map(med => `
+                                <div style="border: 1px solid #eee; padding: 15px; margin: 10px 0; border-radius: 4px;">
+                                    <h3>${med.name}</h3>
+                                    <p><strong>Price:</strong> ₹${med.price}</p>
+                                    <p><strong>Stock:</strong> ${med.stock} (${med.inStock ? 'In Stock' : 'Out of Stock'})</p>
+                                    <p><strong>Category:</strong> ${med.categoryName || 'N/A'}</p>
+                                    <p>${med.description || ''}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    return true;
+                } else {
+                    throw new Error('Invalid API response structure');
+                }
+            } catch (error) {
+                console.error('Medicine extraction failed:', error);
+                const root = document.getElementById('root');
+                root.innerHTML = `
+                    <h1>Debug Test Failed</h1>
+                    <p style="color: red;">Error: ${error.message}</p>
+                `;
+                return false;
+            }
+        }
+        
+        // Run the test
+        testMedicineExtraction().then(success => {
+            if (success) {
+                console.log('DEBUG TEST PASSED: Frontend logic works correctly');
+            } else {
+                console.log('DEBUG TEST FAILED: Frontend logic has issues');
+            }
+        });
+    </script>
+</body>
+</html>

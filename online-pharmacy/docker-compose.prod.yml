@@ -1,0 +1,214 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pharmacy-postgres
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: pharmacy
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pharmacy123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pharmacy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: pharmacy-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: pharmacy-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  eureka:
+    image: pharmacy-eureka:latest
+    container_name: pharmacy-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  config:
+    image: pharmacy-config:latest
+    container_name: pharmacy-config
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,native
+      - EUREKA_HOSTNAME=eureka
+    depends_on:
+      eureka:
+        condition: service_healthy
+
+  identity:
+    image: pharmacy-identity:latest
+    container_name: pharmacy-identity
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_db
+      - SPRING_DATASOURCE_USERNAME=pharmacy
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-pharmacy123}
+      - EUREKA_SERVER_URL=http://eureka:8761/eureka/
+      - RABBITMQ_HOST=rabbitmq
+      - REDIS_HOST=redis
+      - JWT_SECRET=${JWT_SECRET:-pharmacySecureJWTSecretKey2024ForHS256Algorithm256Bits}
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  catalog:
+    image: pharmacy-catalog:latest
+    container_name: pharmacy-catalog
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/catalog_db
+      - SPRING_DATASOURCE_USERNAME=pharmacy
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-pharmacy123}
+      - EUREKA_SERVER_URL=http://eureka:8761/eureka/
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+      - config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  orders:
+    image: pharmacy-orders:latest
+    container_name: pharmacy-orders
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_db
+      - SPRING_DATASOURCE_USERNAME=pharmacy
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-pharmacy123}
+      - EUREKA_SERVER_URL=http://eureka:8761/eureka/
+      - RABBITMQ_HOST=rabbitmq
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - rabbitmq
+      - config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  gateway:
+    image: pharmacy-gateway:latest
+    container_name: pharmacy-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_SERVER_URL=http://eureka:8761/eureka/
+      - IDENTITY_SERVICE_URL=http://identity:8081
+      - CATALOG_SERVICE_URL=http://catalog:8082
+      - ORDERS_SERVICE_URL=http://orders:8083
+      - ADMIN_SERVICE_URL=http://admin:8084
+      - JWT_SECRET=${JWT_SECRET:-pharmacySecureJWTSecretKey2024ForHS256Algorithm256Bits}
+    depends_on:
+      - eureka
+      - config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - pharmacy-network
+
+  admin:
+    image: pharmacy-admin:latest
+    container_name: pharmacy-admin
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/admin_db
+      - SPRING_DATASOURCE_USERNAME=pharmacy
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-pharmacy123}
+      - EUREKA_SERVER_URL=http://eureka:8761/eureka/
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+  notifications:
+    image: pharmacy-notifications:latest
+    container_name: pharmacy-notifications
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_SERVER_URL=http://eureka:8761/eureka/
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  pharmacy-network:
+    driver: bridge
+    name: pharmacy-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:

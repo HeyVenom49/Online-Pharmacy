@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Debug</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Frontend API Debug</h1>
+    <div id="logs"></div>
+    <div id="result"></div>
+    <script>
+        const logs = document.getElementById('logs');
+        const result = document.getElementById('result');
+        
+        function log(msg) {
+            const p = document.createElement('p');
+            p.textContent = msg;
+            logs.appendChild(p);
+            console.log(msg);
+        }
+        
+        log('Starting debug...');
+        
+        // Simulate what the frontend apiClient does
+        const API_BASE_URL = 'http://localhost:8080/api';
+        log(`API_BASE_URL: ${API_BASE_URL}`);
+        
+        const apiClient = axios.create({
+            baseURL: API_BASE_URL,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        apiClient.interceptors.request.use(
+            (config) => {
+                const token = localStorage.getItem('token');
+                log(`Request interceptor: token=${token ? 'present' : 'none'}`);
+                if (token && config.headers) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+                return config;
+            },
+            (error) => {
+                log(`Request interceptor error: ${error.message}`);
+                return Promise.reject(error);
+            }
+        );
+
+        apiClient.interceptors.response.use(
+            (response) => {
+                log(`Response interceptor: success`);
+                return response;
+            },
+            async (error) => {
+                log(`Response interceptor error: ${error.message}`);
+                if (error.response?.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        // Test the actual API calls the frontend makes
+        log('Testing getMedicines...');
+        apiClient.get('/catalog/medicines', { params: { page: 0, size: 20 } })
+            .then(response => {
+                log(`getMedicines success: ${JSON.stringify(response.data)}`);
+                result.innerHTML = `<h2>Medicines (${response.data.data.content.length}):</h2><pre>${JSON.stringify(response.data.data.content, null, 2)}</pre>`;
+            })
+            .catch(error => {
+                log(`getMedicines error: ${JSON.stringify(error.response?.data || error.message)}`);
+                result.innerHTML += `<h2>getMedicines Error:</h2><pre>${JSON.stringify(error.response?.data || error.message, null, 2)}</pre>`;
+            });
+            
+        log('Testing getCategories...');
+        apiClient.get('/catalog/categories')
+            .then(response => {
+                log(`getCategories success: ${JSON.stringify(response.data)}`);
+                result.innerHTML += `<h2>Categories (${response.data.data.length}):</h2><pre>${JSON.stringify(response.data.data, null, 2)}</pre>`;
+            })
+            .catch(error => {
+                log(`getCategories error: ${JSON.stringify(error.response?.data || error.message)}`);
+                result.innerHTML += `<h2>getCategories Error:</h2><pre>${JSON.stringify(error.response?.data || error.message, null, 2)}</pre>`;
+            });
+    </script>
+</body>
+</html>

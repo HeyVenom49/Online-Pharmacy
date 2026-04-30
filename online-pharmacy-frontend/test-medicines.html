@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Medicines Test</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Testing Medicine Display</h1>
+    <div id="medicines-container"></div>
+    
+    <script>
+        // Test if we can fetch and display medicines
+        async function loadMedicines() {
+            try {
+                const response = await axios.get('http://localhost:8080/api/catalog/medicines');
+                const medicines = response.data.data.content; // Extract the actual medicines array
+                
+                console.log('API Response:', response.data);
+                console.log('Medicines array:', medicines);
+                
+                const container = document.getElementById('medicines-container');
+                
+                if (medicines.length === 0) {
+                    container.innerHTML = '<p>No medicines found</p>';
+                    return;
+                }
+                
+                let html = `<h2>Found ${medicines.length} medicines:</h2><ul>`;
+                medicines.forEach(med => {
+                    html += `
+                        <li>
+                            <strong>${med.name}</strong><br/>
+                            Price: ₹${med.price}<br/>
+                            Stock: ${med.stock} (${med.inStock ? 'In Stock' : 'Out of Stock'})<br/>
+                            Category: ${med.categoryName || 'N/A'}
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('medicines-container').innerHTML = 
+                    `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Error fetching medicines:', error);
+            }
+        }
+        
+        loadMedicines();
+    </script>
+</body>
+</html>

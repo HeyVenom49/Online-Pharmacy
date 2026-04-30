@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Working Medicine Display</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script>
+        // Create a simplified version that definitely works
+        const { useState, useEffect } = React;
+        
+        // API client like in frontend
+        const apiClient = axios.create({
+            baseURL: 'http://localhost:8080/api',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        // Add auth interceptor (no auth needed for this test)
+        apiClient.interceptors.request.use((config) => {
+            return config;
+        });
+        
+        apiClient.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                return Promise.reject(error);
+            }
+        );
+
+        // Medicine service like in frontend
+        const medicineService = {
+            getMedicines: async (page = 0) => {
+                console.log('[TestService] Fetching medicines page:', page);
+                const response = await apiClient.get('/catalog/medicines', { 
+                    params: { page, size: 20 } 
+                });
+                console.log('[TestService] Got response:', response.data);
+                return response.data.data; // This matches our ApiResponse format
+            }
+        };
+
+        // Main App component
+        function App() {
+            const [medicines, setMedicines] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                console.log('[TestApp] useEffect running');
+                async function loadMedicines() {
+                    try {
+                        setLoading(true);
+                        setError(null);
+                        const data = await medicineService.getMedicines();
+                        console.log('[TestApp] Medicines data:', data);
+                        setMedicines(data.content); // Extract the content array
+                        setLoading(false);
+                    } catch (err) {
+                        console.error('[TestApp] Error loading medicines:', err);
+                        setError(err.message);
+                        setLoading(false);
+                    }
+                }
+                
+                loadMedicines();
+            }, []); // Empty deps = run once on mount
+
+            if (loading) return <div>Loading...</div>;
+            if (error) return <div>Error: {error}</div>;
+            
+            return (
+                <div>
+                    <h1>Medicines Test</h1>
+                    {medicines.length === 0 ? (
+                        <p>No medicines found</p>
+                    ) : (
+                        <div>
+                            <h2>Found {medicines.length} medicines:</h2>
+                            <ul>
+                                {medicines.map(med => (
+                                    <li key={med.id} style={{margin: '10px 0', padding: '10px', border: '1px solid #ccc'}}>
+                                        <h3>{med.name}</h3>
+                                        <p>{med.description || ''}</p>
+                                        <p>Price: ₹{med.price}</p>
+                                        <p>Stock: {med.stock} ({med.inStock ? 'In Stock' : 'Out of Stock'})</p>
+                                        <p>Category: {med.categoryName || 'N/A'}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

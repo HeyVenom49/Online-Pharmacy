@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Connection Test</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <div id="status">Testing...</div>
+    <div id="result"></div>
+    
+    <script>
+        // Test direct API call
+        async function testDirectAPI() {
+            try {
+                const response = await axios.get('http://localhost:8080/api/catalog/medicines');
+                document.getElementById('status').innerHTML = '<p style="color: green;">✓ Direct API call successful</p>';
+                document.getElementById('result').innerHTML = `
+                    <h3>Response:</h3>
+                    <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<p style="color: red;">✗ Direct API call failed: ${error.message}</p>`;
+                console.error('Direct API error:', error);
+            }
+        }
+        
+        // Test proxied API call (what frontend should use)
+        async function testProxiedAPI() {
+            try {
+                const response = await axios.get('/catalog/medicines'); // This should be proxied to http://localhost:8080/api/catalog/medicines
+                document.getElementById('status').innerHTML += '<p style="color: green;">✓ Proxied API call successful</p>';
+                document.getElementById('result').innerHTML += `
+                    <h3>Proxied Response:</h3>
+                    <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('status').innerHTML += `<p style="color: red;">✗ Proxied API call failed: ${error.message}</p>`;
+                console.error('Proxied API error:', error);
+            }
+        }
+        
+        // Run tests
+        testDirectAPI();
+        testProxiedAPI();
+    </script>
+</body>
+</html>
