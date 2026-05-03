@@ -44,8 +44,8 @@ export function AddMedicinePage() {
       const res = await fetch('/api/catalog/categories');
       const data = await res.json();
       setCategories(data.data?.content || data.data || []);
-    } catch (err) {
-      console.error('Failed to fetch categories:', err);
+    } catch {
+      // Silently handle category fetch errors
     } finally {
       setFetchingCategories(false);
     }
@@ -73,8 +73,8 @@ export function AddMedicinePage() {
         expiryDate: medicine.expiryDate || '',
         batchNumber: medicine.batchNumber || '',
       });
-    } catch (err) {
-      console.error('Failed to fetch medicine:', err);
+    } catch {
+      // Silently handle medicine fetch errors
     } finally {
       setFetchingMedicine(false);
     }
@@ -125,8 +125,8 @@ export function AddMedicinePage() {
 
       setSuccess(isEditMode ? 'Medicine updated successfully!' : 'Medicine added successfully!');
       setTimeout(() => navigate('/admin/dashboard'), 1500);
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }

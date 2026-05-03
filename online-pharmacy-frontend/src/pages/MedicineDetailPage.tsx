@@ -38,8 +38,8 @@ export function MedicineDetailPage() {
           related.data.filter((m) => m.id !== data.id).slice(0, 4)
         );
       }
-    } catch (error) {
-      console.error('Failed to fetch medicine:', error);
+    } catch {
+      // Silently handle medicine fetch errors
     } finally {
       setLoading(false);
     }
@@ -54,8 +54,7 @@ export function MedicineDetailPage() {
       setAddingToCart(true);
       await addToCart({ medicineId: Number(medicineId), quantity });
       alert(`Added ${quantity} item(s) to cart!`);
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
+    } catch {
       alert('Failed to add to cart');
     } finally {
       setAddingToCart(false);

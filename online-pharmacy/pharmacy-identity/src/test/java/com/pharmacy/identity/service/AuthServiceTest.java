@@ -59,6 +59,9 @@ class AuthServiceTest {
 
     private User activeUser;
 
+    /** Active user used when tests need a non-jane email (login path loads user before authenticate). */
+    private User activeUserX;
+
     @BeforeEach
     void setUp() {
         activeUser = User.builder()
@@ -67,6 +70,15 @@ class AuthServiceTest {
                 .email("jane@test.com")
                 .passwordHash("hash")
                 .mobile("555")
+                .role(Role.CUSTOMER)
+                .status(UserStatus.ACTIVE)
+                .build();
+        activeUserX = User.builder()
+                .id(99L)
+                .name("X")
+                .email("x@test.com")
+                .passwordHash("hash")
+                .mobile("1")
                 .role(Role.CUSTOMER)
                 .status(UserStatus.ACTIVE)
                 .build();
@@ -204,6 +216,7 @@ class AuthServiceTest {
 
     @Test
     void login_badCredentials_wrapped() {
+        when(userRepository.findByEmail("x@test.com")).thenReturn(Optional.of(activeUserX));
         when(authenticationManager.authenticate(any()))
                 .thenThrow(new BadCredentialsException("bad"));
 
@@ -215,6 +228,7 @@ class AuthServiceTest {
 
     @Test
     void login_authThrowsGeneric_wrappedAsBadCredentials() {
+        when(userRepository.findByEmail("x@test.com")).thenReturn(Optional.of(activeUserX));
         when(authenticationManager.authenticate(any()))
                 .thenThrow(new RuntimeException("ldap down"));
 
@@ -224,13 +238,13 @@ class AuthServiceTest {
 
     @Test
     void login_userMissingAfterAuth() {
-        when(authenticationManager.authenticate(any())).thenReturn(null);
         when(userRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
 
         LoginRequest request = LoginRequest.builder().email("ghost@test.com").password("p").build();
         assertThrows(ResourceNotFoundException.class, () -> authService.login(request));
 
         verify(identityEventPublisher, never()).publishUserLoggedIn(any());
+        verify(authenticationManager, never()).authenticate(any());
     }
 
     @Test
@@ -243,13 +257,13 @@ class AuthServiceTest {
                 .role(Role.CUSTOMER)
                 .status(UserStatus.INACTIVE)
                 .build();
-        when(authenticationManager.authenticate(any())).thenReturn(null);
         when(userRepository.findByEmail("i@test.com")).thenReturn(Optional.of(inactive));
 
         LoginRequest request = LoginRequest.builder().email("i@test.com").password("p").build();
         assertThrows(UnauthorizedException.class, () -> authService.login(request));
 
         verify(identityEventPublisher, never()).publishUserLoggedIn(any());
+        verify(authenticationManager, never()).authenticate(any());
     }
 
     @Test

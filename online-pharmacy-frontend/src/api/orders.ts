@@ -22,19 +22,16 @@ export const ordersApi = {
     return response.data.data;
   },
 
-  getOrders: async (): Promise<any[]> => {
-    const response = await apiClient.get<any>('/orders');
-    console.log('Orders API response:', response.data);
-    // Handle both ApiPaginatedResponse and ApiResponse formats
-    const data = response.data?.data;
-    if (Array.isArray(data)) return data;
-    if (data?.content) return data.content; // Paginated response
+  getOrders: async (): Promise<Order[]> => {
+    const response = await apiClient.get<ApiResponse<Order[] | { content: Order[] }>>('/orders');
+    const payload = response.data?.data;
+    if (Array.isArray(payload)) return payload;
+    if (payload?.content && Array.isArray(payload.content)) return payload.content;
     return [];
   },
 
-  getOrderById: async (orderId: number): Promise<any> => {
-    const response = await apiClient.get<any>(`/orders/${orderId}`);
-    console.log('Order detail API response:', response.data);
+  getOrderById: async (orderId: number): Promise<Order> => {
+    const response = await apiClient.get<ApiResponse<Order>>(`/orders/${orderId}`);
     return response.data?.data || response.data;
   },
 

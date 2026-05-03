@@ -85,11 +85,8 @@ export const useAuthStore = create<AuthState>()(
       loginWithOtp: async (email: string, otpCode: string) => {
         set({ loading: true, error: null });
         try {
-          console.log('authStore: Verifying OTP for', email, otpCode);
           await authApi.verifyLoginOtp({ email, otpCode, otpType: 'LOGIN' });
-          console.log('authStore: OTP verified, completing login');
           const response = await authApi.completeOtpLogin(email);
-          console.log('authStore: Login complete, response:', response);
 
           const user: User = {
             id: response.userId,
@@ -109,7 +106,6 @@ export const useAuthStore = create<AuthState>()(
           });
           return user;
         } catch (error: unknown) {
-          console.error('authStore loginWithOtp error:', error);
           set({
             error: getErrorMessage(error, 'OTP verification failed'),
             loading: false,

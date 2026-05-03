@@ -29,7 +29,7 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!authenticated || !displayUser || displayUser.role === 'ADMIN') return;
-    ordersApi.getOrders().then((orders: any[]) => {
+    ordersApi.getOrders().then((orders) => {
       const myOrders = orders.filter((o) => o.userId === displayUser.id);
       setOrderCount(myOrders.length);
       const spent = myOrders

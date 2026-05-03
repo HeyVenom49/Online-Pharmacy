@@ -12,8 +12,8 @@ export function useCart() {
       setLoading(true);
       const data = await cartApi.getCart();
       setCart(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch cart');
+    } catch {
+      setError('Failed to fetch cart');
     } finally {
       setLoading(false);
     }
@@ -29,9 +29,9 @@ export function useCart() {
       const updatedCart = await cartApi.addToCart(data);
       setCart(updatedCart);
       return updatedCart;
-    } catch (err: any) {
-      setError(err.message || 'Failed to add to cart');
-      throw err;
+    } catch {
+      setError('Failed to add to cart');
+      throw new Error('Failed to add to cart');
     }
   };
 
@@ -41,9 +41,9 @@ export function useCart() {
       const updatedCart = await cartApi.updateCartItem(itemId, quantity);
       setCart(updatedCart);
       return updatedCart;
-    } catch (err: any) {
-      setError(err.message || 'Failed to update quantity');
-      throw err;
+    } catch {
+      setError('Failed to update quantity');
+      throw new Error('Failed to update quantity');
     }
   };
 
@@ -53,9 +53,9 @@ export function useCart() {
       const updatedCart = await cartApi.removeFromCart(itemId);
       setCart(updatedCart);
       return updatedCart;
-    } catch (err: any) {
-      setError(err.message || 'Failed to remove item');
-      throw err;
+    } catch {
+      setError('Failed to remove item');
+      throw new Error('Failed to remove item');
     }
   };
 
@@ -64,9 +64,9 @@ export function useCart() {
       setError('');
       await cartApi.clearCart();
       setCart(null);
-    } catch (err: any) {
-      setError(err.message || 'Failed to clear cart');
-      throw err;
+    } catch {
+      setError('Failed to clear cart');
+      throw new Error('Failed to clear cart');
     }
   };
 

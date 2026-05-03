@@ -5,8 +5,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
+    } catch {
       return initialValue;
     }
   });
@@ -16,8 +15,8 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
+    } catch {
+      // Silently fail if storage is full
     }
   }, [key, storedValue]);
 
@@ -25,8 +24,8 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     try {
       window.localStorage.removeItem(key);
       setStoredValue(initialValue);
-    } catch (error) {
-      console.error(`Error removing localStorage key "${key}":`, error);
+    } catch {
+      // Silently fail
     }
   }, [key, initialValue]);
 
@@ -49,8 +48,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
     try {
       const item = window.sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading sessionStorage key "${key}":`, error);
+    } catch {
       return initialValue;
     }
   });
@@ -60,8 +58,8 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(`Error setting sessionStorage key "${key}":`, error);
+    } catch {
+      // Silently fail
     }
   }, [key, storedValue]);
 
@@ -69,8 +67,8 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
     try {
       window.sessionStorage.removeItem(key);
       setStoredValue(initialValue);
-    } catch (error) {
-      console.error(`Error removing sessionStorage key "${key}":`, error);
+    } catch {
+      // Silently fail
     }
   }, [key, initialValue]);
 

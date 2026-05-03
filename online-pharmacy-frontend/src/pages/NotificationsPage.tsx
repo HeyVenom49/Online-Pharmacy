@@ -4,6 +4,18 @@ import { Bell, Check, CreditCard, Truck, Package, AlertCircle } from 'lucide-rea
 import { ordersApi } from '../api/orders';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Order } from '../types';
+
+interface AppNotification {
+  id: string;
+  type: 'PAYMENT' | 'DELIVERY';
+  title: string;
+  message: string;
+  orderId: number;
+  status: string;
+  createdAt: string | null;
+  isRead: boolean;
+}
 
 const typeColors: Record<string, string> = {
   PAYMENT: 'bg-orange-100 text-orange-800',
@@ -11,7 +23,7 @@ const typeColors: Record<string, string> = {
 };
 
 export function NotificationsPage() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,21 +33,21 @@ export function NotificationsPage() {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const orders = await ordersApi.getOrders();
-      const notificationItems: any[] = [];
+      const orders: Order[] = await ordersApi.getOrders();
+      const notificationItems: AppNotification[] = [];
       
       if (orders && orders.length > 0) {
-        orders.forEach((order: any) => {
-          if (order.paymentStatus && order.paymentStatus !== 'SUCCESS') {
+        orders.forEach((order: Order) => {
+          if (order.payment?.status && order.payment.status !== 'SUCCESS') {
             notificationItems.push({
               id: `${order.id}-payment`,
               type: 'PAYMENT',
               title: 'Payment Update',
-              message: `Payment ${order.paymentStatus} for Order #${order.id}`,
+              message: `Payment ${order.payment.status} for Order #${order.id}`,
               orderId: order.id,
-              status: order.paymentStatus,
+              status: order.payment.status,
               createdAt: order.orderedAt,
-              isRead: order.paymentStatus === 'SUCCESS'
+              isRead: false,
             });
           }
           if (order.status) {
@@ -53,8 +65,8 @@ export function NotificationsPage() {
         });
       }
       setNotifications(notificationItems);
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
+    } catch {
+      // Silently handle notification fetch errors
     } finally {
       setLoading(false);
     }

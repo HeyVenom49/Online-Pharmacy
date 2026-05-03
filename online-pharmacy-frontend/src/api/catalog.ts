@@ -1,6 +1,7 @@
 import apiClient from '../lib/apiClient';
 import type {
   ApiResponse,
+  PageResponse,
   Category,
   Medicine,
   MedicineDetail,
@@ -23,13 +24,22 @@ export const catalogApi = {
     getMedicines: async (
         page = 0,
         size = 20
-    ): Promise<{ data: { data: Medicine[], pagination: any } }> => {
-        console.log('Calling GET /catalog/medicines with params:', { page, size });
-        const response = await apiClient.get<any>('/catalog/medicines', {
+    ): Promise<PaginatedMedicinesResponse> => {
+        const response = await apiClient.get<ApiResponse<PageResponse<Medicine>>>('/catalog/medicines', {
             params: { page, size },
         });
-        console.log('Response from /catalog/medicines:', response.data);
-        return response;
+        const pageData = response.data.data;
+        return {
+            data: pageData.content,
+            pagination: {
+                page: pageData.number,
+                size: pageData.size,
+                totalElements: pageData.totalElements,
+                totalPages: pageData.totalPages,
+                first: pageData.first,
+                last: pageData.last,
+            },
+        };
     },
 
     searchMedicines: async (
@@ -37,11 +47,9 @@ export const catalogApi = {
         page = 0,
         size = 20
     ): Promise<PaginatedMedicinesResponse> => {
-        console.log('Calling GET /catalog/medicines/search with params:', { ...filters, page, size });
         const response = await apiClient.get('/catalog/medicines/search', {
             params: { ...filters, page, size },
         });
-        console.log('Response from /catalog/medicines/search:', response.data);
         const envelope = response.data as ApiResponse<unknown>;
         const inner = envelope.data;
         let data: Medicine[] = [];
@@ -62,16 +70,12 @@ export const catalogApi = {
     },
 
     getMedicineById: async (id: number): Promise<MedicineDetail> => {
-        console.log('Calling GET /catalog/medicines/${id}');
         const response = await apiClient.get<ApiResponse<MedicineDetail>>(`/catalog/medicines/${id}`);
-        console.log('Response from /catalog/medicines/${id}:', response.data);
         return response.data.data;
     },
 
     getCategories: async (): Promise<Category[]> => {
-        console.log('Calling GET /catalog/categories');
-        const response = await apiClient.get<any>('/catalog/categories');
-        console.log('Response from /catalog/categories:', response.data);
+        const response = await apiClient.get<ApiResponse<Category[]>>('/catalog/categories');
         return response.data?.data || [];
     },
 };

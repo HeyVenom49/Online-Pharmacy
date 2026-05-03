@@ -34,8 +34,8 @@ export function AdminMedicinesPage() {
       });
       const data = await res.json();
       setMedicines(data.data?.data || data.data || []);
-    } catch (err) {
-      console.error('Failed to fetch medicines:', err);
+    } catch {
+      // Silently handle fetch errors
     } finally {
       setLoading(false);
     }
@@ -46,8 +46,8 @@ export function AdminMedicinesPage() {
       const res = await fetch('/api/catalog/categories');
       const data = await res.json();
       setCategories(data.data || []);
-    } catch (err) {
-      console.error('Failed to fetch categories:', err);
+    } catch {
+      // Silently handle category fetch errors
     }
   };
 
@@ -98,8 +98,8 @@ export function AdminMedicinesPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchMedicines();
-    } catch (err) {
-      console.error('Failed to delete medicine:', err);
+    } catch {
+      // Silently handle delete errors
     }
   };
 

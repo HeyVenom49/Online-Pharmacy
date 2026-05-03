@@ -6,6 +6,15 @@ import { useCartStore } from '../../store/cartStore';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ordersApi } from '../../api/orders';
+import { Order } from '../../types';
+
+interface NavNotification {
+  id: number;
+  type: 'payment' | 'delivery';
+  status: string;
+  message: string;
+  date: string | null;
+}
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -15,7 +24,7 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NavNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const notificationsRef = useRef<HTMLDivElement | null>(null);
 
@@ -80,16 +89,16 @@ export function Navbar() {
     setLoadingNotifications(true);
     try {
       const orders = await ordersApi.getOrders();
-      const notificationItems: any[] = [];
+      const notificationItems: NavNotification[] = [];
       
       if (orders && orders.length > 0) {
-        orders.slice(0, 5).forEach((order: any) => {
-          if (order.paymentStatus && order.paymentStatus !== 'SUCCESS') {
+        orders.slice(0, 5).forEach((order) => {
+          if (order.payment?.status && order.payment.status !== 'SUCCESS') {
             notificationItems.push({
               id: order.id,
               type: 'payment',
-              status: order.paymentStatus,
-              message: `Payment ${order.paymentStatus} for Order #${order.id}`,
+              status: order.payment.status,
+              message: `Payment ${order.payment.status} for Order #${order.id}`,
               date: order.orderedAt
             });
           }
@@ -105,8 +114,8 @@ export function Navbar() {
         });
       }
       setNotifications(notificationItems);
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
+    } catch {
+      // Silently handle notification fetch errors
     } finally {
       setLoadingNotifications(false);
     }

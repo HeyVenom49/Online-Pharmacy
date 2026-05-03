@@ -38,14 +38,11 @@ export const useProductStore = create<ProductState>((set) => ({
   error: null,
 
     fetchMedicines: async (page = 0) => {
-        console.log('[ProductStore] fetchMedicines called with page:', page);
         set({ loading: true, error: null });
         try {
-            console.log('[ProductStore] Calling catalogApi.getMedicines');
             const response = await catalogApi.getMedicines(page, 20);
-            console.log('[ProductStore] Received response:', response);
-            const medicinesList = response.data?.data || response.data || [];
-            const paginationData = response.data?.pagination || {};
+            const medicinesList = response.data ?? [];
+            const paginationData = response.pagination ?? {};
             set({
                 medicines: medicinesList,
                 pagination: {
@@ -57,7 +54,6 @@ export const useProductStore = create<ProductState>((set) => ({
                 loading: false,
             });
         } catch (error: unknown) {
-            console.error('[ProductStore] Error in fetchMedicines:', error);
             const err = error as { response?: { data?: { message?: string } } };
             set({
                 error: err.response?.data?.message || 'Failed to fetch medicines',
@@ -67,14 +63,10 @@ export const useProductStore = create<ProductState>((set) => ({
     },
 
   fetchCategories: async () => {
-    console.log('[ProductStore] fetchCategories called');
     try {
-      console.log('[ProductStore] Calling catalogApi.getCategories');
       const categories = await catalogApi.getCategories();
-      console.log('[ProductStore] Categories received:', categories);
       set({ categories: categories || [] });
     } catch (error) {
-      console.error('[ProductStore] Failed to fetch categories:', error);
       set({ categories: [] });
     }
   },

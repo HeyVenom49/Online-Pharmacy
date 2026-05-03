@@ -44,12 +44,12 @@ export function OrdersPage() {
     if (authenticated) {
       ordersApi.getOrders()
         .then((data) => {
-          const userOrders = user?.id
-            ? data.filter((order: any) => order.userId === user.id)
+           const userOrders = user?.id
+            ? data.filter((order) => order.userId === user.id)
             : data;
           setOrders(userOrders);
         })
-        .catch(console.error)
+        .catch(() => {})
         .finally(() => setLoading(false));
     } else {
       setLoading(false);

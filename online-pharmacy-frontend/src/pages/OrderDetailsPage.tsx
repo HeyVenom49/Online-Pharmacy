@@ -74,8 +74,8 @@ export function OrderDetailsPage() {
         const data = await response.json();
         setOrder((data.data?.data || data.data || data) as Order);
       }
-    } catch (err) {
-      console.error('Failed to fetch order:', err);
+    } catch {
+      // Silently handle order fetch errors
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export function OrderDetailsPage() {
     if (!popup) return;
     const rows = items
       .map(
-        (item: any) =>
+        (item) =>
           `<tr><td>${item.medicineName}</td><td>${item.quantity}</td><td>₹${item.unitPrice}</td><td>₹${item.subtotal}</td></tr>`
       )
       .join('');
@@ -298,7 +298,7 @@ export function OrderDetailsPage() {
           <div className="border-t pt-4">
             <h3 className="text-sm font-medium text-slate-500 mb-2">Items ({items.length})</h3>
             <div className="space-y-2">
-              {items.map((item: any) => (
+              {items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                   <div>
                     <p className="font-medium">{item.medicineName}</p>

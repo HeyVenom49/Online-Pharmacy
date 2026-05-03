@@ -1,5 +1,7 @@
 package com.pharmacy.common.dto;
 
+import com.pharmacy.common.api.ErrorResponse;
+import com.pharmacy.common.api.ErrorResponses;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -54,7 +56,7 @@ class PageResponseErrorResponseTest {
 
     @Test
     void errorResponseOf() {
-        ErrorResponse e = ErrorResponse.of(400, "error msg", List.of("detail1", "detail2"));
+        ErrorResponse e = ErrorResponses.of(400, "error msg", List.of("detail1", "detail2"));
         assertEquals(400, e.getStatusCode());
         assertEquals("error msg", e.getMessage());
         assertEquals(2, e.getErrors().size());

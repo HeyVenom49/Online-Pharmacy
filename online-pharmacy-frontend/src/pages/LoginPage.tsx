@@ -57,23 +57,17 @@ export function LoginPage() {
     clearError();
     setIsAnimating(true);
     
-    console.log('Starting OTP submit with:', pendingEmail, otpCode);
-    
     try {
       await loginWithOtp(pendingEmail, otpCode);
-      console.log('loginWithOtp succeeded');
-    } catch (err: any) {
-      console.error('loginWithOtp failed:', err?.response?.data || err);
+    } catch {
       setIsAnimating(false);
       return;
     }
     
     setIsAnimating(false);
     
-    // Read from localStorage directly since store might not be updated yet
     const userJson = localStorage.getItem('user');
     const user = userJson ? JSON.parse(userJson) : null;
-    console.log('Redirecting user:', user);
     
     const target = user?.role === 'ADMIN' ? '/admin/dashboard' : '/';
     window.location.href = target;

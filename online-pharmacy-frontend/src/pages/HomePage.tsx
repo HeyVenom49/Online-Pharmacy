@@ -55,14 +55,14 @@ export function HomePage() {
       const res = await fetch('/api/catalog/categories');
       const data = await res.json();
       // categories loaded
-    } catch (e) {
-      console.error('[HomePage] Fetch error:', e);
+    } catch {
+      // Silently handle category fetch errors
     }
   };
 
   useEffect(() => {
     loadCategories();
-    fetchCategories().catch(e => console.error('[HomePage] store fetch error:', e));
+    fetchCategories().catch(() => {});
     if (searchQuery) {
       searchMedicines({ name: searchQuery });
     } else {
@@ -116,8 +116,8 @@ export function HomePage() {
     const quantity = quantities[medicineId] || 1;
     try {
       await addToCart({ medicineId, quantity });
-    } catch (err) {
-      console.error('Failed to add to cart:', err);
+    } catch {
+      // Silently handle add to cart errors
     }
   };
 

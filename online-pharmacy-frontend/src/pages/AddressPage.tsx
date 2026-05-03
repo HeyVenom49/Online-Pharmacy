@@ -27,8 +27,8 @@ export function AddressPage() {
       setLoading(true);
       const data = await addressApi.getAddresses();
       setAddresses(data);
-    } catch (err) {
-      console.error('Failed to load addresses:', err);
+    } catch {
+      // Silently handle address load errors
     } finally {
       setLoading(false);
     }
@@ -50,8 +50,8 @@ export function AddressPage() {
       setEditingId(null);
       setForm({ fullAddress: '', pincode: '', city: '', state: '', type: 'HOME' });
       loadAddresses();
-    } catch (err) {
-      console.error('Failed to save address:', err);
+    } catch {
+      // Silently handle address save errors
     }
   };
 

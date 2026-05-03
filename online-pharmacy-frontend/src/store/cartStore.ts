@@ -21,12 +21,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   fetchCart: async () => {
     set({ loading: true });
     try {
-      console.log('[CartStore] Fetching cart...');
       const cart = await cartApi.getCart();
-      console.log('[CartStore] Cart fetched:', cart);
       set({ cart, loading: false });
     } catch (error) {
-      console.error('[CartStore] Error fetching cart:', error);
       set({ loading: false, cart: null });
     }
   },
@@ -34,13 +31,10 @@ export const useCartStore = create<CartState>((set, get) => ({
   addToCart: async (data: AddToCartRequest) => {
     set({ loading: true, error: null });
     try {
-      console.log('[CartStore] Adding to cart:', data);
       const cart = await cartApi.addToCart(data);
-      console.log('[CartStore] Cart updated:', cart);
       set({ cart, loading: false });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      console.error('[CartStore] Error adding to cart:', err);
       set({
         error: err.response?.data?.message || 'Failed to add item',
         loading: false,

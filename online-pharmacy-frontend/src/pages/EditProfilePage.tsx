@@ -66,8 +66,8 @@ export function EditProfilePage() {
       
       setSuccess('Profile updated successfully!');
       setTimeout(() => navigate('/profile'), 1500);
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }

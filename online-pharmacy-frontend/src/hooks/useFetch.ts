@@ -38,8 +38,8 @@ export function useFetch<T>(url: string, options: UseFetchOptions<T> = {}): UseF
       const result = response.data.data;
       setData(result);
       onSuccess?.(result);
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') {
         const error = new Error(err.message || 'Failed to fetch data');
         setError(error);
         onError?.(error);
@@ -79,8 +79,8 @@ export function useMutate<TData, TResponse>() {
         response = await apiClient.delete<ApiResponse<TResponse>>(url);
       }
       return response.data.data;
-    } catch (err: any) {
-      const error = new Error(err.message || 'Operation failed');
+    } catch (err: unknown) {
+      const error = new Error(err instanceof Error ? err.message : 'Operation failed');
       setError(error);
       throw error;
     } finally {

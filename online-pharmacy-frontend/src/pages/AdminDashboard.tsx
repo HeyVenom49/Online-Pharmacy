@@ -50,40 +50,48 @@ export function AdminDashboard() {
     }
   }, [authenticated, currentUser]);
 
-const fetchDashboardData = async () => {
+  function unwrapList(res: unknown): unknown[] {
+    if (Array.isArray(res)) return res;
+    if (res && typeof res === 'object') {
+      const r = res as Record<string, unknown>;
+      if (Array.isArray(r.content)) return r.content;
+      if (Array.isArray(r.data)) return r.data;
+    }
+    return [];
+  }
+
+  const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
       const [ordersRes, medicinesRes] = await Promise.all([
-        fetch('/internal/orders', { headers }).then(r => r.json()),
-        fetch('/api/catalog/medicines?page=0&size=100', { headers }).then(r => r.json())
+        fetch('/internal/orders', { headers }).then((r) => r.json() as unknown),
+        fetch('/api/catalog/medicines?page=0&size=100', { headers }).then((r) => r.json() as unknown),
       ]);
 
-      const orders = Array.isArray(ordersRes) ? ordersRes : 
-                    Array.isArray(ordersRes?.content) ? ordersRes.content :
-                    Array.isArray(ordersRes?.data) ? ordersRes.data : [];
-      const medicines = Array.isArray(medicinesRes) ? medicinesRes :
-                      Array.isArray(medicinesRes?.content) ? medicinesRes.content :
-                      Array.isArray(medicinesRes?.data) ? medicinesRes.data : [];
+      type DashOrder = { id: number; status: string; grandTotal?: number; orderedAt?: string | null };
+      type DashMedicine = { stock: number };
+      const orders = unwrapList(ordersRes) as DashOrder[];
+      const medicines = unwrapList(medicinesRes) as DashMedicine[];
 
-      const completedOrders = orders.filter((o: any) =>
+      const completedOrders = orders.filter((o: DashOrder) =>
         ['DELIVERED', 'CUSTOMER_CANCELLED', 'ADMIN_CANCELLED'].includes(o.status)
       ).length;
-      const pendingOrders = orders.filter((o: any) => 
+      const pendingOrders = orders.filter((o: DashOrder) =>
         ['CHECKOUT_STARTED', 'PAYMENT_PENDING', 'PAID', 'PACKED', 'OUT_FOR_DELIVERY'].includes(o.status)
       ).length;
       const totalRevenue = orders
-        .filter((o: any) => o.status === 'DELIVERED')
-        .reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
-      const lowStockItems = medicines.filter((m: any) => m.stock < 20).length;
+        .filter((o: DashOrder) => o.status === 'DELIVERED')
+        .reduce((sum: number, o: DashOrder) => sum + (o.grandTotal || 0), 0);
+      const lowStockItems = medicines.filter((m: DashMedicine) => m.stock < 20).length;
       const statusBuckets = [
         { label: 'Pending', value: pendingOrders, color: '#f59e0b' },
         { label: 'Completed', value: completedOrders, color: '#22c55e' },
         {
           label: 'Cancelled',
-          value: orders.filter((o: any) => ['CUSTOMER_CANCELLED', 'ADMIN_CANCELLED'].includes(o.status)).length,
-          color: '#ef4444'
+          value: orders.filter((o: DashOrder) => ['CUSTOMER_CANCELLED', 'ADMIN_CANCELLED'].includes(o.status)).length,
+          color: '#ef4444',
         },
       ];
       const revenueSeries = Array.from({ length: 6 }).map((_, idx) => {
@@ -93,12 +101,12 @@ const fetchDashboardData = async () => {
         const month = d.getMonth();
         const year = d.getFullYear();
         const monthRevenue = orders
-          .filter((o: any) => {
+          .filter((o: DashOrder) => {
             if (!o.orderedAt || o.status !== 'DELIVERED') return false;
             const od = new Date(o.orderedAt);
             return od.getMonth() === month && od.getFullYear() === year;
           })
-          .reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
+          .reduce((sum: number, o: DashOrder) => sum + (o.grandTotal || 0), 0);
         return { label: monthLabel, value: monthRevenue };
       });
 
@@ -112,8 +120,8 @@ const fetchDashboardData = async () => {
         statusBuckets,
         revenueSeries,
       });
-    } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
+    } catch {
+      // Silently handle dashboard fetch errors
     } finally {
       setLoading(false);
     }

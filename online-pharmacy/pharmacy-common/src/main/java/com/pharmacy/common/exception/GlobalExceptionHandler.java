@@ -1,11 +1,12 @@
 package com.pharmacy.common.exception;
 
-import com.pharmacy.common.dto.ErrorResponse;
+import com.pharmacy.common.api.ErrorResponse;
+import com.pharmacy.common.api.ErrorResponses;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), List.of());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), List.of(), "Not Found");
     }
 
     @ExceptionHandler(BadRequestException.class)
@@ -68,7 +69,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException ex) {
         log.warn("Insufficient stock: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), List.of());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of(), "Insufficient Stock");
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidFile(InvalidFileException ex) {
+        log.warn("Invalid file: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, "Data conflict", List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -117,7 +136,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
         log.warn("File upload too large: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File size exceeds maximum allowed", List.of());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "File size exceeds maximum allowed", List.of(), "File Too Large");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -138,12 +157,19 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred",
-                List.of()
+                List.of(),
+                "Internal Server Error"
         );
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message, List<String> errors) {
-        ErrorResponse response = ErrorResponse.of(status.value(), message, errors.isEmpty() ? null : errors);
+        return buildErrorResponse(status, message, errors, null);
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(
+            HttpStatus status, String message, List<String> errors, String error) {
+        List<String> err = errors.isEmpty() ? null : errors;
+        ErrorResponse response = ErrorResponses.of(status.value(), message, err, error);
         return ResponseEntity.status(status).body(response);
     }
 }

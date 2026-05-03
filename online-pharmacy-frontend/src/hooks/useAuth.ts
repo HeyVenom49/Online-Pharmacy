@@ -73,7 +73,7 @@ export function useAuth() {
     try {
       await authApi.logout();
     } catch (err) {
-      console.error('Logout error:', err);
+      // Silently handle logout errors - user should be logged out regardless
     }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

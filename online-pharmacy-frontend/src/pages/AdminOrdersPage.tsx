@@ -51,11 +51,11 @@ export function AdminOrdersPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      const fetchedOrders = (data.content || data.data || data || []).sort((a: any, b: any) => (b.id || 0) - (a.id || 0));
+      const fetchedOrders: Order[] = (data.content || data.data || data || []).sort((a: Order, b: Order) => (b.id || 0) - (a.id || 0));
       setOrders(fetchedOrders);
 
       // Fetch user emails
-      const numericUserIds = (fetchedOrders as any[])
+      const numericUserIds = fetchedOrders
         .map((o) => Number(o.userId))
         .filter((id) => Number.isFinite(id) && id > 0) as number[];
       const userIds = Array.from(new Set<number>(numericUserIds));
@@ -71,17 +71,16 @@ export function AdminOrdersPage() {
           setUserEmails(prev => ({ ...prev, [emailKey]: `User #${userId}` }));
         }
       }
-    } catch (err) {
-      console.error('Failed to fetch orders:', err);
+    } catch {
       try {
         const token = localStorage.getItem('token');
         const res = await fetch('/api/orders?page=0&size=100', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        setOrders((Array.isArray(data) ? data : data.data || []).sort((a: any, b: any) => (b.id || 0) - (a.id || 0)));
-      } catch (err2) {
-        console.error('Failed to fetch orders (fallback):', err2);
+        setOrders((Array.isArray(data) ? data : data.data || []).sort((a: Order, b: Order) => (b.id || 0) - (a.id || 0)));
+      } catch {
+        // Fallback failed silently
       }
     } finally {
       setLoading(false);
