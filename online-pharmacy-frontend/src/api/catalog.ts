@@ -20,26 +20,45 @@ type PaginatedMedicinesResponse = {
   };
 };
 
+/** Backend uses ApiPaginatedResponse: { data: T[], pagination: { ... } } — not Spring Page inside data. */
+function parsePaginatedMedicines(
+  body: unknown,
+  fallbacks: { page: number; size: number }
+): PaginatedMedicinesResponse {
+  const b = body as {
+    data?: unknown;
+    pagination?: PaginatedMedicinesResponse['pagination'];
+  };
+  const raw = b.data;
+  let list: Medicine[] = [];
+  if (Array.isArray(raw)) {
+    list = raw as Medicine[];
+  } else if (raw && typeof raw === 'object' && 'content' in raw) {
+    list = ((raw as PageResponse<Medicine>).content ?? []) as Medicine[];
+  }
+  const p = b.pagination;
+  return {
+    data: list,
+    pagination: {
+      page: p?.page ?? fallbacks.page,
+      size: p?.size ?? fallbacks.size,
+      totalElements: p?.totalElements ?? list.length,
+      totalPages: p?.totalPages ?? 0,
+      first: p?.first,
+      last: p?.last,
+    },
+  };
+}
+
 export const catalogApi = {
     getMedicines: async (
         page = 0,
         size = 20
     ): Promise<PaginatedMedicinesResponse> => {
-        const response = await apiClient.get<ApiResponse<PageResponse<Medicine>>>('/catalog/medicines', {
+        const response = await apiClient.get('/catalog/medicines', {
             params: { page, size },
         });
-        const pageData = response.data.data;
-        return {
-            data: pageData.content,
-            pagination: {
-                page: pageData.number,
-                size: pageData.size,
-                totalElements: pageData.totalElements,
-                totalPages: pageData.totalPages,
-                first: pageData.first,
-                last: pageData.last,
-            },
-        };
+        return parsePaginatedMedicines(response.data, { page, size });
     },
 
     searchMedicines: async (
@@ -50,23 +69,7 @@ export const catalogApi = {
         const response = await apiClient.get('/catalog/medicines/search', {
             params: { ...filters, page, size },
         });
-        const envelope = response.data as ApiResponse<unknown>;
-        const inner = envelope.data;
-        let data: Medicine[] = [];
-        let pagination = {
-            page,
-            size,
-            totalElements: 0,
-            totalPages: 0,
-        };
-        if (Array.isArray(inner)) {
-            data = inner as Medicine[];
-        } else if (inner && typeof inner === 'object') {
-            const blob = inner as { data?: Medicine[]; pagination?: typeof pagination };
-            data = blob.data ?? [];
-            pagination = blob.pagination ?? pagination;
-        }
-        return { data, pagination };
+        return parsePaginatedMedicines(response.data, { page, size });
     },
 
     getMedicineById: async (id: number): Promise<MedicineDetail> => {

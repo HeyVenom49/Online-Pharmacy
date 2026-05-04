@@ -20,3 +20,20 @@ export function getMedicineImageById(id: number, categoryName?: string | null): 
   const category = categoryName || 'default';
   return categoryImageMap[category] || `https://picsum.photos/seed/med-${id}/400/400`;
 }
+
+/** Stable placeholder when remote URLs fail (Unsplash hotlinking, network, etc.). */
+export function medicineImageFallbackUrl(id: number, width = 400, height = 400): string {
+  return `https://picsum.photos/seed/med-${id}/${width}/${height}`;
+}
+
+export function applyMedicineImageFallback(
+  e: { currentTarget: HTMLImageElement },
+  id: number,
+  width = 400,
+  height = 400
+): void {
+  const el = e.currentTarget;
+  if (el.dataset.medicineImgFallback) return;
+  el.dataset.medicineImgFallback = '1';
+  el.src = medicineImageFallbackUrl(id, width, height);
+}

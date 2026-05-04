@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useProductStore } from '../store/productStore';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { getMedicineImage } from '../utils/medicineImage';
+import { getMedicineImage, applyMedicineImageFallback } from '../utils/medicineImage';
 import { prescriptionApi } from '../api/prescription';
 import { catalogApi } from '../api/catalog';
 import { useUserPrefsStore } from '../store/userPrefsStore';
@@ -24,6 +24,8 @@ export function HomePage() {
   const navigate = useNavigate();
   const searchQuery = searchParams.get('search');
   const [localSearch, setLocalSearch] = useState(searchQuery || '');
+  const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
+  const [categoryLoading, setCategoryLoading] = useState(true);
   const [sortOption, setSortOption] = useState<string>('default');
   const [mounted, setMounted] = useState(false);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
@@ -50,11 +52,15 @@ export function HomePage() {
 
   useEffect(() => { setMounted(true); }, []);
 
+  useEffect(() => {
+    setLocalSearch(searchQuery || '');
+    if (searchQuery) setSelectedCategory(undefined);
+  }, [searchQuery]);
+
   const loadCategories = async () => {
     try {
       const res = await fetch('/api/catalog/categories');
-      const data = await res.json();
-      // categories loaded
+      await res.json();
     } catch {
       // Silently handle category fetch errors
     }
@@ -62,7 +68,10 @@ export function HomePage() {
 
   useEffect(() => {
     loadCategories();
-    fetchCategories().catch(() => {});
+    setCategoryLoading(true);
+    fetchCategories()
+      .catch(() => {})
+      .finally(() => setCategoryLoading(false));
     if (searchQuery) {
       searchMedicines({ name: searchQuery });
     } else {
@@ -84,16 +93,21 @@ export function HomePage() {
     loadRecentItems();
   }, [recentMedicineIds]);
 
-  const handleCategoryClick = (categoryId: number | undefined) => {
-    if (categoryId) {
-      searchMedicines({ categoryId: categoryId });
+  const handleCategoryClick = (categoryId?: number) => {
+    setLocalSearch('');
+    setSearchParams({});
+    if (categoryId != null) {
+      setSelectedCategory(categoryId);
+      searchMedicines({ categoryId });
     } else {
+      setSelectedCategory(undefined);
       fetchMedicines();
     }
   };
 
   const handleLocalSearch = (value: string) => {
     setLocalSearch(value);
+    setSelectedCategory(undefined);
     if (value.trim()) {
       searchMedicines({ name: value });
       setSearchParams({ search: value });
@@ -152,7 +166,7 @@ export function HomePage() {
                 Order genuine medicines and healthcare products from verified pharmacies. Fast delivery, best prices, and 100% authentic products.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" onClick={() => document.getElementById('medicines')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Button size="lg" onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })}>
                   Browse Medicines
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -187,11 +201,71 @@ export function HomePage() {
         </section>
       )}
 
+      {!searchQuery && (
+        <>
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { icon: Shield, title: '100% Genuine', desc: 'Verified products', color: 'bg-success/10 text-success' },
+              { icon: Truck, title: 'Free Delivery', desc: 'On orders ₹500+', color: 'bg-primary/10 text-primary' },
+              { icon: Clock, title: '24/7 Service', desc: 'Always available', color: 'bg-warning/10 text-warning' },
+              { icon: ShoppingCart, title: 'Easy Returns', desc: 'Hassle-free policy', color: 'bg-purple-100 text-purple-600' },
+            ].map((item, index) => (
+              <div key={index} className={`flex items-center gap-4 p-4 rounded-2xl bg-white shadow-soft hover:shadow-card-hover transition-all ${mounted ? 'animate-slide-up' : 'opacity-0'}`} style={{ animationDelay: `${index * 100}ms` }}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${item.color}`}>
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900">{item.title}</p>
+                  <p className="text-sm text-slate-500">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </section>
+
+          <section id="categories">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Shop by Category</h2>
+
+            {categoryLoading ? (
+              <div className="flex h-20 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-sky-500" />
+              </div>
+            ) : !categories?.length ? (
+              <div className="text-slate-500">No categories found</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {categories.map((category, index) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => handleCategoryClick(category.id)}
+                    className={`flex flex-col items-center gap-3 p-4 rounded-2xl bg-white shadow-soft hover:shadow-card-hover transition-all ${
+                      selectedCategory === category.id ? 'ring-2 ring-primary' : ''
+                    } ${mounted ? 'animate-slide-up' : 'opacity-0'}`}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-colors ${
+                      selectedCategory === category.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {categoryIcons[category.name] || categoryIcons.default}
+                    </div>
+                    <span className="text-sm font-medium text-slate-700 text-center">{category.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
       <section id="medicines">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">
-              {searchQuery ? 'Search Results' : 'Popular Medicines'}
+              {selectedCategory
+                ? categories.find((c) => c.id === selectedCategory)?.name || 'Medicines'
+                : searchQuery
+                  ? 'Search Results'
+                  : 'Popular Medicines'}
             </h2>
             <p className="text-slate-600">{pagination.totalElements} products available</p>
           </div>
@@ -217,8 +291,8 @@ export function HomePage() {
               <option value="name-asc">Name: A to Z</option>
               <option value="name-desc">Name: Z to A</option>
             </select>
-            {searchQuery && (
-              <Button variant="outline" size="sm" onClick={() => { handleLocalSearch(''); setSortOption('default'); }}>
+            {(selectedCategory != null || searchQuery || sortOption !== 'default') && (
+              <Button variant="outline" size="sm" onClick={() => { setSortOption('default'); handleCategoryClick(undefined); }}>
                 Clear
               </Button>
             )}
@@ -285,7 +359,7 @@ export function HomePage() {
                         src={getMedicineImage(medicine)}
                         alt={medicine.name}
                         className="h-40 w-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/med-${medicine.id}/400/400`; }}
+                        onError={(e) => applyMedicineImageFallback(e, medicine.id, 400, 400)}
                       />
                       {(medicine as any).requiresPrescription && (
                         <div className="absolute top-3 left-3">
@@ -416,7 +490,12 @@ export function HomePage() {
             {recentItems.map((item) => (
               <Link key={item.id} to={`/medicine/${item.id}`} className="min-w-[220px] max-w-[220px]">
                 <Card className="overflow-hidden">
-                  <img src={getMedicineImage(item)} alt={item.name} className="h-28 w-full object-cover" />
+                  <img
+                    src={getMedicineImage(item)}
+                    alt={item.name}
+                    className="h-28 w-full object-cover"
+                    onError={(e) => applyMedicineImageFallback(e, item.id, 400, 400)}
+                  />
                   <div className="p-3">
                     <p className="truncate font-medium text-slate-900">{item.name}</p>
                     <p className="text-sm text-slate-600">₹{item.price}</p>
