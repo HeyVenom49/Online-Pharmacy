@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +35,8 @@ public class OrdersClient {
         return orders.stream()
                 .filter(order -> {
                     String status = order.getStatus();
-                    return status != null && (status.equals("DRAFT_CART") || 
-                            status.equals("CHECKOUT_STARTED") || 
+                    return status != null && (status.equals("DRAFT_CART") ||
+                            status.equals("CHECKOUT_STARTED") ||
                             status.equals("PAYMENT_PENDING") ||
                             status.equals("PRESCRIPTION_PENDING"));
                 })

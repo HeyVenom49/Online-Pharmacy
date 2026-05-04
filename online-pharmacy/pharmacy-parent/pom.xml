@@ -91,7 +91,7 @@
                 <version>${flyway.version}</version>
             </dependency>
 
-            <!-- Micrometer Tracing (replaces Spring Cloud Sleuth) -->
+            <!-- Micrometer Tracing -->
             <dependency>
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-tracing-bridge-brave</artifactId>
