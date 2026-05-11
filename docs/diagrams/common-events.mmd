@@ -1,0 +1,107 @@
+classDiagram
+    direction TB
+
+    namespace common {
+        class BaseEvent {
+            +String eventId
+            +String correlationId
+            +LocalDateTime timestamp
+            +String sourceService
+        }
+
+        class UserRegisteredEvent {
+            +Long userId
+            +String email
+            +String name
+            +Role role
+        }
+
+        class UserLoggedInEvent {
+            +Long userId
+            +String email
+            +String ipAddress
+            +String userAgent
+        }
+
+        class OrderPlacedEvent {
+            +Long orderId
+            +Long userId
+            +BigDecimal totalAmount
+            +OrderStatus status
+            +List~OrderItemDTO~ items
+        }
+
+        class OrderCancelledEvent {
+            +Long orderId
+            +Long userId
+            +String cancellationReason
+            +OrderStatus previousStatus
+        }
+
+        class PrescriptionApprovedEvent {
+            +Long prescriptionId
+            +Long userId
+            +Long medicineId
+        }
+
+        class PrescriptionRejectedEvent {
+            +Long prescriptionId
+            +Long userId
+            +String rejectionReason
+        }
+
+        class InventoryReservedEvent {
+            +Long medicineId
+            +String batchNumber
+            +int quantity
+            +Long orderId
+        }
+
+        class InventoryReleasedEvent {
+            +Long medicineId
+            +String batchNumber
+            +int quantity
+            +Long orderId
+        }
+
+        class PaymentConfirmedEvent {
+            +Long orderId
+            +Long paymentId
+            +BigDecimal amount
+            +PaymentMethod method
+        }
+
+        class RefundInitiatedEvent {
+            +Long orderId
+            +Long paymentId
+            +BigDecimal refundAmount
+        }
+    }
+
+    BaseEvent <|-- UserRegisteredEvent
+    BaseEvent <|-- UserLoggedInEvent
+    BaseEvent <|-- OrderPlacedEvent
+    BaseEvent <|-- OrderCancelledEvent
+    BaseEvent <|-- PrescriptionApprovedEvent
+    BaseEvent <|-- PrescriptionRejectedEvent
+    BaseEvent <|-- InventoryReservedEvent
+    BaseEvent <|-- InventoryReleasedEvent
+    BaseEvent <|-- PaymentConfirmedEvent
+    BaseEvent <|-- RefundInitiatedEvent
+
+    class EventType {
+        <<enumeration>>
+        USER_REGISTERED
+        USER_LOGGED_IN
+        ORDER_PLACED
+        ORDER_CANCELLED
+        PRESCRIPTION_APPROVED
+        PRESCRIPTION_REJECTED
+        INVENTORY_RESERVED
+        INVENTORY_RELEASED
+        PAYMENT_CONFIRMED
+        REFUND_INITIATED
+    }
+
+    UserRegisteredEvent --> EventType : type = USER_REGISTERED
+    OrderPlacedEvent --> EventType : type = ORDER_PLACED

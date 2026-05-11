@@ -1,0 +1,144 @@
+classDiagram
+    direction TB
+
+    %% Identity Service Package
+    namespace identity {
+        class AuthController {
+            +login(LoginRequest): AuthResponse
+            +signup(SignupRequest): User
+            +logout(): void
+            +getCurrentUser(): User
+            +requestPasswordReset(OtpRequest): OtpResponse
+            +resetPassword(params): void
+        }
+
+        class AddressController {
+            +getAddresses(): List~Address~
+            +createAddress(AddressRequest): Address
+            +updateAddress(Long, AddressRequest): Address
+            +deleteAddress(Long): void
+            +setDefaultAddress(Long): Address
+        }
+
+        class NotificationController {
+            +getNotifications(): List~Notification~
+            +markAsRead(Long): Notification
+            +deleteNotification(Long): void
+        }
+
+        class AuthService {
+            +login(LoginRequest): AuthResponse
+            +signup(SignupRequest): User
+            +logout(String token): void
+            +generateOtp(OtpRequest): OtpResponse
+            +verifyOtp(OtpVerificationRequest): OtpResponse
+        }
+
+        class OtpService {
+            +generateOtp(String email, OtpType): String
+            +verifyOtp(String email, String code, OtpType): boolean
+            +isOtpValid(String email, String code): boolean
+            +invalidateOtp(String email): void
+        }
+
+        class AddressService {
+            +getAddressesByUserId(Long): List~Address~
+            +createAddress(Long, AddressRequest): Address
+            +updateAddress(Long, Long, AddressRequest): Address
+            +deleteAddress(Long, Long): void
+            +setDefaultAddress(Long, Long): Address
+        }
+
+        class JwtBlacklistService {
+            +blacklistToken(String token): void
+            +isBlacklisted(String token): boolean
+        }
+
+        class NotificationService {
+            +getNotifications(Long userId): List~Notification~
+            +createNotification(Long userId, String title, String message): Notification
+            +markAsRead(Long notificationId): Notification
+            +deleteNotification(Long notificationId): void
+        }
+
+        class User {
+            +Long id
+            +String name
+            +String email
+            +String password
+            +String mobile
+            +Role role
+            +UserStatus status
+            +LocalDateTime createdAt
+            +LocalDateTime updatedAt
+        }
+
+        class Address {
+            +Long id
+            +Long userId
+            +String fullAddress
+            +String landmark
+            +String pincode
+            +String city
+            +String state
+            +AddressType type
+            +boolean isDefault
+        }
+
+        class Notification {
+            +Long id
+            +Long userId
+            +String title
+            +String message
+            +NotificationType type
+            +boolean isRead
+            +LocalDateTime createdAt
+        }
+
+        class OtpVerification {
+            +Long id
+            +String email
+            +String otpCode
+            +OtpType type
+            +LocalDateTime expiresAt
+            +int attempts
+            +boolean verified
+        }
+
+        enum Role {
+            CUSTOMER
+            ADMIN
+        }
+
+        enum UserStatus {
+            ACTIVE
+            INACTIVE
+            SUSPENDED
+        }
+
+        enum OtpType {
+            SIGNUP
+            LOGIN
+            PASSWORD_RESET
+        }
+    }
+
+    AuthController --> AuthService
+    AddressController --> AddressService
+    NotificationController --> NotificationService
+
+    AuthService --> OtpService
+    AuthService --> JwtBlacklistService
+    AuthService --> NotificationService
+    AuthService --> User
+    AuthService --> Notification
+    AuthService ..> UserRegisteredEvent
+    AuthService ..> UserLoggedInEvent
+
+    AddressService --> Address
+
+    OtpService --> OtpVerification
+
+    User --> Role
+    User --> UserStatus
+    Address --> User

@@ -1,0 +1,99 @@
+flowchart TB
+    subgraph App["📱 App Component"]
+        Browser["BrowserRouter"]
+    end
+
+    subgraph Layouts["🎨 Layouts"]
+        direction LR
+        Layout["Layout\n(User Layout)"]
+        AdminLayout["AdminLayout\n(Admin Layout)"]
+    end
+
+    subgraph Pages["📄 Pages"]
+        direction TB
+
+        subgraph AuthPages["Authentication Pages"]
+            Login["LoginPage"]
+            Signup["SignupPage"]
+            ForgotPassword["ForgotPasswordPage"]
+        end
+
+        subgraph UserPages["User Pages"]
+            Home["HomePage"]
+            Cart["CartPage"]
+            Checkout["CheckoutPage"]
+            Orders["OrdersPage"]
+            OrderDetails["OrderDetailsPage"]
+            Notifications["NotificationsPage"]
+            Profile["ProfilePage"]
+            EditProfile["EditProfilePage"]
+            Address["AddressPage"]
+            Wishlist["WishlistPage"]
+            MedicineDetail["MedicineDetailPage"]
+        end
+
+        subgraph AdminPages["Admin Pages"]
+            AdminDashboard["AdminDashboard"]
+            AdminMedicines["AdminMedicinesPage"]
+            AddMedicine["AddMedicinePage"]
+            AdminOrders["AdminOrdersPage"]
+        end
+    end
+
+    subgraph Components["🧩 Components"]
+        direction TB
+        subgraph UI["UI Components"]
+            Button["Button"]
+            Input["Input"]
+            Card["Card"]
+            Modal["Modal"]
+            ConfirmModal["ConfirmModal"]
+        end
+        Navbar["Navbar"]
+        ToastProvider["ToastProvider"]
+    end
+
+    subgraph State["💾 State Management (Zustand)"]
+        authStore["authStore"]
+        cartStore["cartStore"]
+        productStore["productStore"]
+        userPrefsStore["userPrefsStore"]
+    end
+
+    subgraph API["🔌 API Layer"]
+        authApi["auth.ts"]
+        catalogApi["catalog.ts"]
+        ordersApi["orders.ts"]
+        cartApi["cart.ts"]
+        prescriptionApi["prescription.ts"]
+        addressApi["address.ts"]
+        apiClient["apiClient.ts"]
+    end
+
+    subgraph Hooks["⚓ Hooks"]
+        useAuth["useAuth"]
+        useCart["useCart"]
+        useFetch["useFetch"]
+        useLocalStorage["useLocalStorage"]
+    end
+
+    subgraph Types["📋 Types"]
+        typeIndex["index.ts\n(User, Medicine, Order, etc.)"]
+    end
+
+    Browser --> Layout
+    Browser --> AdminLayout
+
+    Layout --> AuthPages
+    Layout --> UserPages
+    AdminLayout --> AdminPages
+
+    Pages --> Components
+    Pages --> State
+    Pages --> Hooks
+
+    State --> API
+    Hooks --> API
+    API --> apiClient
+    Components --> Types
+    State --> Types

@@ -23,15 +23,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Value("${application.name:pharmacy-service}")
     private String applicationName;
@@ -136,7 +133,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
         log.warn("File upload too large: {}", ex.getMessage());
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, "File size exceeds maximum allowed", List.of(), "File Too Large");
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "File size exceeds maximum allowed", List.of(),
+                "File Too Large");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -158,8 +156,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred",
                 List.of(),
-                "Internal Server Error"
-        );
+                "Internal Server Error");
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message, List<String> errors) {

@@ -1,0 +1,192 @@
+erDiagram
+    %% auth_db schema
+    auth_db.users {
+        bigint id PK
+        varchar name
+        varchar email UK
+        varchar password_hash
+        varchar mobile
+        varchar role
+        varchar status
+        datetime created_at
+        datetime updated_at
+    }
+
+    auth_db.addresses {
+        bigint id PK
+        bigint user_id FK
+        varchar full_address
+        varchar landmark
+        varchar pincode
+        varchar city
+        varchar state
+        varchar type
+        boolean is_default
+        datetime created_at
+        datetime updated_at
+    }
+
+    auth_db.notifications {
+        bigint id PK
+        bigint user_id FK
+        varchar title
+        text message
+        varchar type
+        boolean is_read
+        json metadata
+        datetime created_at
+    }
+
+    auth_db.otp_verifications {
+        bigint id PK
+        varchar email
+        varchar otp_code
+        varchar type
+        datetime expires_at
+        int attempts
+        boolean verified
+        datetime created_at
+    }
+
+    auth_db.user_roles {
+        bigint id PK
+        bigint user_id FK
+        varchar role_name
+        datetime assigned_at
+    }
+
+    auth_db.jwt_blacklist {
+        bigint id PK
+        text token_hash
+        datetime blacklisted_at
+        datetime expires_at
+    }
+
+    %% catalog_db schema
+    catalog_db.medicines {
+        bigint id PK
+        varchar name
+        text description
+        bigint category_id FK
+        decimal price
+        decimal mrp
+        boolean requires_prescription
+        varchar dosage_form
+        varchar strength
+        varchar manufacturer
+        varchar image_url
+        datetime created_at
+        datetime updated_at
+    }
+
+    catalog_db.categories {
+        bigint id PK
+        varchar name
+        text description
+        varchar image_url
+        datetime created_at
+    }
+
+    catalog_db.inventory {
+        bigint id PK
+        bigint medicine_id FK
+        varchar batch_number
+        int quantity
+        date manufacture_date
+        date expiry_date
+        boolean expired
+        boolean expiring_soon
+        datetime created_at
+        datetime updated_at
+    }
+
+    catalog_db.prescriptions {
+        bigint id PK
+        bigint user_id
+        bigint medicine_id FK
+        varchar image_url
+        varchar status
+        bigint reviewed_by
+        text rejection_reason
+        datetime created_at
+        datetime updated_at
+        datetime reviewed_at
+    }
+
+    %% order_db schema
+    order_db.orders {
+        bigint id PK
+        bigint user_id FK
+        varchar status
+        decimal total_amount
+        decimal delivery_fee
+        decimal discount
+        decimal grand_total
+        text address_snapshot
+        varchar address_pincode
+        varchar delivery_slot
+        text notes
+        datetime ordered_at
+        datetime updated_at
+    }
+
+    order_db.order_items {
+        bigint id PK
+        bigint order_id FK
+        bigint medicine_id
+        varchar medicine_name
+        int quantity
+        decimal unit_price
+        decimal subtotal
+        bigint prescription_id
+    }
+
+    order_db.payments {
+        bigint id PK
+        bigint order_id FK
+        varchar status
+        varchar payment_method
+        varchar transaction_id
+        decimal amount
+        datetime paid_at
+        datetime created_at
+    }
+
+    order_db.carts {
+        bigint id PK
+        bigint user_id FK UK
+        datetime updated_at
+    }
+
+    order_db.cart_items {
+        bigint id PK
+        bigint cart_id FK
+        bigint medicine_id
+        varchar medicine_name
+        int quantity
+        decimal unit_price
+        decimal subtotal
+        bigint prescription_id
+        datetime added_at
+    }
+
+    %% Relationships
+    users ||--o{ addresses : has
+    users ||--o{ notifications : receives
+    users ||--o{ otp_verifications : has
+    users ||--o{ user_roles : has
+    users ||--o| orders : places
+    users ||--o| carts : has
+
+    orders ||--o{ order_items : contains
+    orders ||--o| payments : has
+    orders ||--o| carts : associated_with
+
+    cart_items }o--|| carts : belongs_to
+    cart_items }o--|| prescriptions : requires
+
+    medicines ||--o{ inventory : tracks
+    medicines ||--o| prescriptions : requires
+    medicines ||--|| categories : belongs_to
+    medicines ||--o{ order_items : ordered_as
+    medicines ||--o{ cart_items : carted_as

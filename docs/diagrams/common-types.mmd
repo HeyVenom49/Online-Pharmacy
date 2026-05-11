@@ -1,0 +1,139 @@
+classDiagram
+    direction TB
+
+    namespace common.enums {
+        class Role {
+            <<enumeration>>
+            CUSTOMER
+            ADMIN
+        }
+
+        class UserStatus {
+            <<enumeration>>
+            ACTIVE
+            INACTIVE
+            SUSPENDED
+        }
+
+        class OrderStatus {
+            <<enumeration>>
+            DRAFT_CART
+            CHECKOUT_STARTED
+            PRESCRIPTION_PENDING
+            PRESCRIPTION_APPROVED
+            PRESCRIPTION_REJECTED
+            PAYMENT_PENDING
+            PAID
+            PACKED
+            OUT_FOR_DELIVERY
+            DELIVERED
+            CUSTOMER_CANCELLED
+            ADMIN_CANCELLED
+            PAYMENT_FAILED
+            RETURN_REQUESTED
+            REFUND_INITIATED
+            REFUND_COMPLETED
+        }
+
+        class PaymentStatus {
+            <<enumeration>>
+            PENDING
+            SUCCESS
+            FAILED
+            REFUNDED
+        }
+
+        class PaymentMethod {
+            <<enumeration>>
+            CASH_ON_DELIVERY
+            CARD
+            UPI
+            WALLET
+        }
+
+        class PrescriptionStatus {
+            <<enumeration>>
+            PENDING
+            APPROVED
+            REJECTED
+            EXPIRED
+        }
+
+        class NotificationType {
+            <<enumeration>>
+            ORDER
+            PRESCRIPTION
+            PAYMENT
+            SYSTEM
+            INVENTORY
+        }
+
+        class OtpType {
+            <<enumeration>>
+            SIGNUP
+            LOGIN
+            PASSWORD_RESET
+        }
+
+        class AddressType {
+            <<enumeration>>
+            HOME
+            WORK
+            OTHER
+        }
+    }
+
+    class ErrorResponse {
+        +int status
+        +String error
+        +String message
+        +String path
+        +LocalDateTime timestamp
+        +List~String~ details
+    }
+
+    class ApiResponse~T~ {
+        +boolean success
+        +String message
+        +T data
+        +PaginationMetadata pagination
+    }
+
+    class ApiPaginatedResponse~T~ {
+        +boolean success
+        +String message
+        +List~T~ content
+        +int totalPages
+        +long totalElements
+        +int size
+        +int number
+        +boolean first
+        +boolean last
+    }
+
+    class GlobalExceptionHandler {
+        +handleResourceNotFound(ResourceNotFoundException): ErrorResponse
+        +handleBadRequest(BadRequestException): ErrorResponse
+        +handleUnauthorized(UnauthorizedException): ErrorResponse
+        +handleValidationErrors(MethodArgumentNotValidException): ErrorResponse
+        +handleGenericException(Exception): ErrorResponse
+    }
+
+    class ResourceNotFoundException {
+        +String resourceName
+        +String fieldName
+        +Object fieldValue
+    }
+
+    class BadRequestException {
+        +String message
+    }
+
+    class UnauthorizedException {
+        +String message
+    }
+
+    GlobalExceptionHandler ..> ErrorResponse
+    GlobalExceptionHandler ..> ResourceNotFoundException
+    GlobalExceptionHandler ..> BadRequestException
+    GlobalExceptionHandler ..> UnauthorizedException

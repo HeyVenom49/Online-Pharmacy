@@ -1,0 +1,158 @@
+classDiagram
+    direction TB
+
+    namespace catalog {
+        class MedicineController {
+            +getAllMedicines(Pageable): PageResponse
+            +getMedicineById(Long): MedicineDetailDTO
+            +searchMedicines(SearchRequest): PageResponse
+            +getMedicinesByCategory(Long): List~MedicineDTO~
+        }
+
+        class CategoryController {
+            +getAllCategories(): List~CategoryDTO~
+            +getCategoryById(Long): CategoryDTO
+            +createCategory(CategoryRequest): CategoryDTO
+            +updateCategory(Long, CategoryRequest): CategoryDTO
+            +deleteCategory(Long): void
+        }
+
+        class InventoryController {
+            +getInventoryByMedicine(Long): List~InventoryDTO~
+            +updateInventory(Long, InventoryRequest): InventoryDTO
+            +getLowStockItems(): List~InventoryDTO~
+            +getExpiringBatches(int days): List~InventoryDTO~
+        }
+
+        class PrescriptionController {
+            +uploadPrescription(MultipartFile, Long): PrescriptionDTO
+            +getUserPrescriptions(): List~PrescriptionDTO~
+            +getPrescriptionById(Long): PrescriptionDTO
+        }
+
+        class MedicineService {
+            +getAllMedicines(Pageable): PageResponse
+            +getMedicineById(Long): MedicineDetailDTO
+            +searchMedicines(SearchRequest): PageResponse
+            +getMedicinesByCategory(Long): List~MedicineDTO~
+            +createMedicine(MedicineRequest): MedicineDTO
+            +updateMedicine(Long, MedicineRequest): MedicineDTO
+            +deleteMedicine(Long): void
+        }
+
+        class CategoryService {
+            +getAllCategories(): List~CategoryDTO~
+            +getCategoryById(Long): CategoryDTO
+            +createCategory(CategoryRequest): CategoryDTO
+            +updateCategory(Long, CategoryRequest): CategoryDTO
+            +deleteCategory(Long): void
+        }
+
+        class InventoryService {
+            +getInventoryByMedicine(Long): List~InventoryDTO~
+            +updateInventory(Long, InventoryRequest): InventoryDTO
+            +getLowStockItems(): List~InventoryDTO~
+            +getExpiringBatches(int days): List~InventoryDTO~
+            +reserveStock(Long medicineId, int quantity): void
+            +releaseStock(Long medicineId, int quantity): void
+        }
+
+        class PrescriptionService {
+            +uploadPrescription(MultipartFile, Long userId): PrescriptionDTO
+            +getUserPrescriptions(Long userId): List~PrescriptionDTO~
+            +getPrescriptionById(Long): PrescriptionDTO
+            +approvePrescription(Long): PrescriptionDTO
+            +rejectPrescription(Long, String reason): PrescriptionDTO
+        }
+
+        class Medicine {
+            +Long id
+            +String name
+            +String description
+            +Category category
+            +BigDecimal price
+            +BigDecimal mrp
+            +boolean requiresPrescription
+            +String dosageForm
+            +String strength
+            +String manufacturer
+            +LocalDate createdAt
+            +LocalDate updatedAt
+        }
+
+        class Category {
+            +Long id
+            +String name
+            +String description
+            +String imageUrl
+            +List~Medicine~ medicines
+        }
+
+        class Inventory {
+            +Long id
+            +Medicine medicine
+            +String batchNumber
+            +int quantity
+            +LocalDate manufactureDate
+            +LocalDate expiryDate
+            +boolean expired
+            +boolean expiringSoon
+        }
+
+        class Prescription {
+            +Long id
+            +Long userId
+            +Medicine medicine
+            +String imageUrl
+            +PrescriptionStatus status
+            +Long reviewedBy
+            +String rejectionReason
+            +LocalDateTime createdAt
+            +LocalDateTime reviewedAt
+        }
+
+        class FileStorageService {
+            +storeFile(MultipartFile): String
+            +deleteFile(String filename): void
+            +getFileUrl(String filename): String
+        }
+
+        class CatalogEventPublisher {
+            +publishInventoryReserved(InventoryReservedEvent): void
+            +publishInventoryReleased(InventoryReleasedEvent): void
+            +publishPrescriptionApproved(PrescriptionApprovedEvent): void
+            +publishPrescriptionRejected(PrescriptionRejectedEvent): void
+        }
+
+        enum PrescriptionStatus {
+            PENDING
+            APPROVED
+            REJECTED
+            EXPIRED
+        }
+    }
+
+    MedicineController --> MedicineService
+    CategoryController --> CategoryService
+    InventoryController --> InventoryService
+    PrescriptionController --> PrescriptionService
+
+    MedicineService --> Medicine
+    MedicineService --> Category
+    MedicineService --> Inventory
+    MedicineService --> FileStorageService
+    MedicineService --> CatalogEventPublisher
+
+    CategoryService --> Category
+    CategoryService --> Medicine
+
+    InventoryService --> Inventory
+    InventoryService --> Medicine
+
+    PrescriptionService --> Prescription
+    PrescriptionService --> FileStorageService
+    PrescriptionService --> CatalogEventPublisher
+
+    Medicine --> Category
+    Inventory --> Medicine
+    Prescription --> Medicine

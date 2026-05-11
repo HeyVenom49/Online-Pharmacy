@@ -1,0 +1,86 @@
+classDiagram
+    direction TB
+
+    namespace notifications {
+        class EmailController {
+            +sendTestEmail(String to, String subject, String body): ResponseEntity
+        }
+
+        class NotificationDispatchCoordinator {
+            +dispatchOrderConfirmation(Order order): void
+            +dispatchOrderCancellation(Order order): void
+            +dispatchPrescriptionApproved(Prescription prescription): void
+            +dispatchPrescriptionRejected(Prescription prescription): void
+            +dispatchUserRegistration(User user): void
+            +dispatchPaymentConfirmation(Payment payment): void
+        }
+
+        class EmailChannelService {
+            +sendEmail(String to, String subject, String body): boolean
+            +sendHtmlEmail(String to, String subject, String htmlContent): boolean
+            +sendOrderConfirmationEmail(Order order): boolean
+            +sendPrescriptionStatusEmail(Prescription prescription): boolean
+        }
+
+        class NotificationDomainEventListener {
+            +handleUserRegisteredEvent(UserRegisteredEvent): void
+            +handleUserLoggedInEvent(UserLoggedInEvent): void
+            +handleOrderPlacedEvent(OrderPlacedEvent): void
+            +handleOrderCancelledEvent(OrderCancelledEvent): void
+            +handlePrescriptionApprovedEvent(PrescriptionApprovedEvent): void
+            +handlePrescriptionRejectedEvent(PrescriptionRejectedEvent): void
+            +handleInventoryReservedEvent(InventoryReservedEvent): void
+            +handleInventoryReleasedEvent(InventoryReleasedEvent): void
+        }
+
+        class NotificationEntity {
+            +Long id
+            +Long userId
+            +String title
+            +String message
+            +NotificationType type
+            +boolean isRead
+            +LocalDateTime createdAt
+            +String metadata
+        }
+
+        class IdentityClient {
+            +getUserById(Long userId): UserDTO
+            +getUserEmail(Long userId): String
+        }
+
+        enum NotificationType {
+            ORDER
+            PRESCRIPTION
+            PAYMENT
+            SYSTEM
+            INVENTORY
+        }
+
+        class InAppNotificationService {
+            +sendInAppNotification(Long userId, String title, String message, NotificationType): void
+            +getUnreadNotifications(Long userId): List~NotificationEntity~
+            +markAsRead(Long notificationId): void
+            +getNotificationHistory(Long userId): List~NotificationEntity~
+        }
+    }
+
+    EmailController --> NotificationDispatchCoordinator
+
+    NotificationDispatchCoordinator --> EmailChannelService
+    NotificationDispatchCoordinator --> InAppNotificationService
+
+    EmailChannelService --> IdentityClient
+
+    NotificationDomainEventListener --> NotificationDispatchCoordinator
+    NotificationDomainEventListener ..> UserRegisteredEvent
+    NotificationDomainEventListener ..> UserLoggedInEvent
+    NotificationDomainEventListener ..> OrderPlacedEvent
+    NotificationDomainEventListener ..> OrderCancelledEvent
+    NotificationDomainEventListener ..> PrescriptionApprovedEvent
+    NotificationDomainEventListener ..> PrescriptionRejectedEvent
+
+    InAppNotificationService --> NotificationEntity
+
+    NotificationEntity --> NotificationType
+    IdentityClient ..> User

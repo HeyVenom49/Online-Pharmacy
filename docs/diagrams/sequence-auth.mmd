@@ -1,0 +1,81 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as Frontend
+    participant GW as API Gateway
+    participant ID as Identity Service
+    participant REDIS as Redis
+    participant MQ as RabbitMQ
+    participant NOT as Notifications
+
+    alt Simple Login Flow
+        User->>FE: Enter email/password
+        FE->>GW: POST /api/auth/login
+        GW->>ID: Forward to Identity
+        ID->>ID: Validate credentials
+        ID->>REDIS: Check JWT blacklist
+        ID-->>GW: Return AuthResponse with JWT
+        GW-->>FE: Return token
+        FE->>FE: Store token in localStorage
+        FE->>FE: Redirect to home
+
+    else Login with OTP (MFA)
+        User->>FE: Enter email/password
+        FE->>GW: POST /api/auth/login
+        GW->>ID: Forward to Identity
+        ID->>ID: Validate credentials
+        ID-->>GW: Return { otpRequired: true }
+        GW-->>FE: Return otpRequired flag
+        FE->>FE: Show OTP input screen
+        User->>FE: Enter OTP code
+        FE->>GW: POST /api/auth/otp/verify
+        GW->>ID: Forward to Identity
+        ID->>ID: Verify OTP code
+        ID->>ID: Generate JWT token
+        ID->>MQ: Publish UserLoggedInEvent
+        MQ-->>NOT: Deliver event
+        NOT->>NOT: Send welcome email
+        ID-->>GW: Return AuthResponse
+        GW-->>FE: Return token
+        FE->>FE: Store token & user info
+    end
+
+    alt Signup Flow with OTP
+        User->>FE: Enter name, email, password, mobile
+        FE->>GW: POST /api/auth/signup/otp/generate
+        GW->>ID: Forward to Identity
+        ID->>ID: Validate input
+        ID->>ID: Generate OTP code
+        ID->>MQ: Publish OTP generation event
+        MQ-->>NOT: Deliver event
+        NOT->>NOT: Send OTP via email
+        ID-->>GW: Return OtpResponse
+        GW-->>FE: Return success + expiresIn
+        FE->>FE: Show OTP verification screen
+        User->>FE: Enter OTP + confirm password
+        FE->>GW: POST /api/auth/signup/otp/verify
+        GW->>ID: Forward to Identity
+        ID->>ID: Verify OTP code
+        ID->>ID: Create User entity
+        ID->>ID: Generate JWT token
+        ID->>MQ: Publish UserRegisteredEvent
+        MQ-->>NOT: Deliver event
+        NOT->>NOT: Send welcome email
+        ID-->>GW: Return AuthResponse
+        GW-->>FE: Return token + user
+        FE->>FE: Store token & user
+        FE->>FE: Redirect to home
+    end
+
+    alt Logout Flow
+        User->>FE: Click logout
+        FE->>GW: POST /api/auth/logout
+        GW->>ID: Forward to Identity
+        ID->>ID: Extract token from header
+        ID->>REDIS: Add token to blacklist
+        ID->>REDIS: Set TTL = token expiry
+        ID-->>GW: Return success
+        GW-->>FE: Return success
+        FE->>FE: Clear localStorage
+        FE->>FE: Redirect to login
+    end

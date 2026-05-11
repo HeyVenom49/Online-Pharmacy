@@ -1,0 +1,78 @@
+flowchart TB
+    subgraph Frontend["🖥️ Frontend (React + Vite)"]
+        FE["http://localhost:5173"]
+    end
+
+    subgraph Backend["🐳 Docker Infrastructure"]
+        subgraph Gateway["API Gateway (8080)"]
+            GW["Spring Cloud Gateway\nJWT Auth • Rate Limiting • Routing"]
+        end
+
+        subgraph Services["Microservices"]
+            subgraph Identity["Identity Service (8081)"]
+                ID_SVC["AuthService\nOtpService\nAddressService"]
+                ID_DB["auth_db\n(PostgreSQL)"]
+                ID_SVC --> ID_DB
+            end
+
+            subgraph Catalog["Catalog Service (8082)"]
+                CAT_SVC["MedicineService\nCategoryService\nInventoryService\nPrescriptionService"]
+                CAT_DB["catalog_db\n(PostgreSQL)"]
+                CAT_SVC --> CAT_DB
+            end
+
+            subgraph Orders["Orders Service (8083)"]
+                ORD_SVC["OrderService\nCartService\nPaymentService"]
+                ORD_DB["order_db\n(PostgreSQL)"]
+                ORD_SVC --> ORD_DB
+            end
+
+            subgraph Admin["Admin Service (8084)"]
+                ADM_SVC["DashboardService\nCatalogClient\nOrdersClient"]
+                ADM_DB["admin_db\n(PostgreSQL)"]
+                ADM_SVC --> ADM_DB
+            end
+
+            subgraph Notifications["Notifications Service (8085)"]
+                NOT_SVC["EmailChannelService\nNotificationDispatchCoordinator"]
+            end
+        end
+
+        subgraph Infrastructure["Infrastructure"]
+            EUREKA["Eureka Server\n:8761"]
+            CONFIG["Config Server\n:8888"]
+            REDIS["Redis\n:6379"]
+            RABBITMQ["RabbitMQ\n:5672"]
+            ZIPKIN["Zipkin\n:9411"]
+            PROM["Prometheus\n:9090"]
+            GRAFANA["Grafana\n:3000"]
+            MAILPIT["Mailpit\n:1025/:8025"]
+        end
+    end
+
+    FE --> GW
+    GW --> Identity
+    GW --> Catalog
+    GW --> Orders
+    GW --> Admin
+
+    Identity --> EUREKA
+    Catalog --> EUREKA
+    Orders --> EUREKA
+    Admin --> EUREKA
+    Gateway --> EUREKA
+
+    Identity --> REDIS
+    Catalog --> REDIS
+    Orders --> REDIS
+
+    Identity --> RABBITMQ
+    Catalog --> RABBITMQ
+    Orders --> RABBITMQ
+    Notifications --> RABBITMQ
+
+    Notifications --> MAILPIT
+
+    Services --> CONFIG
+    Services --> ZIPKIN
+    PROM --> Services

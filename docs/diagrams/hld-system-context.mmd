@@ -1,0 +1,54 @@
+flowchart LR
+    subgraph Users["👥 Users"]
+        CUSTOMER["Customer\nBrowser/Mobile"]
+        ADMIN["Admin\nDashboard"]
+    end
+
+    subgraph External["🌐 External Services"]
+        EMAIL["Email Provider\n(SMTP)"]
+    end
+
+    subgraph System["🏥 Online Pharmacy System"]
+        subgraph FE["Frontend"]
+            UI["React SPA\n:5173"]
+        end
+
+        subgraph GW["Gateway Layer"]
+            GATEWAY["API Gateway\n:8080"]
+        end
+
+        subgraph MS["Microservices"]
+            ID["Identity\n:8081"]
+            CAT["Catalog\n:8082"]
+            ORD["Orders\n:8083"]
+            ADM["Admin\n:8084"]
+            NOT["Notifications\n:8085"]
+        end
+
+        subgraph Plat["Platform Services"]
+            REG["Eureka\n:8761"]
+            CFG["Config\n:8888"]
+        end
+
+        subgraph Data["Data Layer"]
+            PG[( "PostgreSQL\n:5432" )]
+            RD[( "Redis\n:6379" )]
+            MQ(("RabbitMQ\n:5672"))
+        end
+
+        subgraph Observe["Observability"]
+            ZK["Zipkin\n:9411"]
+            PM["Prometheus\n:9090"]
+            GF["Grafana\n:3000"]
+        end
+    end
+
+    Users --> UI
+    UI --> GATEWAY
+    GATEWAY --> MS
+    MS --> Data
+    MS --> Plat
+    NOT --> EMAIL
+    MS -.-> MQ
+    MS --> ZK
+    PM --> MS

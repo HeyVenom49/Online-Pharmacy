@@ -1,0 +1,172 @@
+classDiagram
+    direction TB
+
+    namespace orders {
+        class CartController {
+            +getCart(): CartDTO
+            +addToCart(AddToCartRequest): CartDTO
+            +updateCartItem(Long, int): CartDTO
+            +removeFromCart(Long): CartDTO
+            +clearCart(): void
+        }
+
+        class OrderController {
+            +checkout(CheckoutRequest): OrderDTO
+            +getOrders(Pageable): PageResponse
+            +getOrderById(Long): OrderDTO
+            +cancelOrder(Long): OrderDTO
+            +initiateReturn(Long, String): OrderDTO
+        }
+
+        class PaymentController {
+            +processPayment(Long, PaymentRequest): PaymentDTO
+            +getPaymentStatus(Long): PaymentDTO
+        }
+
+        class CartService {
+            +getCart(Long userId): CartDTO
+            +addToCart(Long userId, AddToCartRequest): CartDTO
+            +updateCartItem(Long userId, Long itemId, int quantity): CartDTO
+            +removeFromCart(Long userId, Long itemId): CartDTO
+            +clearCart(Long userId): void
+            +validateCartForCheckout(Long userId): boolean
+        }
+
+        class OrderService {
+            +checkout(Long userId, CheckoutRequest): OrderDTO
+            +getOrders(Long userId, Pageable): PageResponse
+            +getOrderById(Long userId, Long orderId): OrderDTO
+            +cancelOrder(Long userId, Long orderId): OrderDTO
+            +initiateReturn(Long userId, Long orderId, String reason): OrderDTO
+            +updateOrderStatus(Long orderId, OrderStatus): OrderDTO
+        }
+
+        class PaymentService {
+            +processPayment(Long orderId, PaymentRequest): PaymentDTO
+            +getPaymentStatus(Long orderId): PaymentDTO
+            +refundPayment(Long orderId): PaymentDTO
+        }
+
+        class Cart {
+            +Long id
+            +Long userId
+            +List~CartItem~ items
+            +BigDecimal subtotal
+            +int totalItems
+            +LocalDateTime updatedAt
+        }
+
+        class CartItem {
+            +Long id
+            +Cart cart
+            +Long medicineId
+            +String medicineName
+            +int quantity
+            +BigDecimal unitPrice
+            +BigDecimal subtotal
+            +Long prescriptionId
+            +LocalDateTime addedAt
+        }
+
+        class Order {
+            +Long id
+            +Long userId
+            +OrderStatus status
+            +BigDecimal totalAmount
+            +BigDecimal deliveryFee
+            +BigDecimal discount
+            +BigDecimal grandTotal
+            +String addressSnapshot
+            +String addressPincode
+            +String deliverySlot
+            +String notes
+            +List~OrderItem~ items
+            +Payment payment
+            +LocalDateTime orderedAt
+            +LocalDateTime updatedAt
+        }
+
+        class OrderItem {
+            +Long id
+            +Order order
+            +Long medicineId
+            +String medicineName
+            +int quantity
+            +BigDecimal unitPrice
+            +BigDecimal subtotal
+            +Long prescriptionId
+        }
+
+        class Payment {
+            +Long id
+            +Order order
+            +PaymentStatus status
+            +PaymentMethod paymentMethod
+            +String transactionId
+            +BigDecimal amount
+            +LocalDateTime paidAt
+        }
+
+        class OrderEventPublisher {
+            +publishOrderPlaced(OrderPlacedEvent): void
+            +publishOrderCancelled(OrderCancelledEvent): void
+        }
+
+        enum OrderStatus {
+            DRAFT_CART
+            CHECKOUT_STARTED
+            PRESCRIPTION_PENDING
+            PRESCRIPTION_APPROVED
+            PRESCRIPTION_REJECTED
+            PAYMENT_PENDING
+            PAID
+            PACKED
+            OUT_FOR_DELIVERY
+            DELIVERED
+            CUSTOMER_CANCELLED
+            ADMIN_CANCELLED
+            PAYMENT_FAILED
+            RETURN_REQUESTED
+            REFUND_INITIATED
+            REFUND_COMPLETED
+        }
+
+        enum PaymentStatus {
+            PENDING
+            SUCCESS
+            FAILED
+            REFUNDED
+        }
+
+        enum PaymentMethod {
+            CASH_ON_DELIVERY
+            CARD
+            UPI
+            WALLET
+        }
+    }
+
+    CartController --> CartService
+    OrderController --> OrderService
+    PaymentController --> PaymentService
+
+    CartService --> Cart
+    CartService --> CartItem
+    CartService --> MedicineClient
+
+    OrderService --> Order
+    OrderService --> OrderItem
+    OrderService --> Payment
+    OrderService --> Cart
+    OrderService --> OrderEventPublisher
+
+    PaymentService --> Payment
+    PaymentService --> Order
+
+    Cart --> CartItem
+    Order --> OrderItem
+    Order --> Payment
+    CartItem --> Prescription
+
+    OrderItem --> Order
+    Payment --> OrderStatus

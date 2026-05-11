@@ -1,0 +1,85 @@
+classDiagram
+    direction TB
+
+    namespace admin {
+        class AdminController {
+            +getDashboard(): DashboardDTO
+            +getAllPrescriptions(Pageable): PageResponse
+            +approvePrescription(Long): PrescriptionDTO
+            +rejectPrescription(Long, String): PrescriptionDTO
+            +getRecentOrders(int limit): List~OrderSummaryDTO~
+            +getLowStockMedicines(): List~MedicineDTO~
+            +getExpiringMedicines(int days): List~MedicineDTO~
+        }
+
+        class DashboardService {
+            +getDashboardKPIs(): DashboardDTO
+            +getTotalOrders(): long
+            +getPendingOrders(): long
+            +getCompletedOrders(): long
+            +getTotalRevenue(): BigDecimal
+            +getPendingPrescriptions(): long
+            +getLowStockItems(): List~MedicineDTO~
+            +getExpiringBatches(): List~InventoryDTO~
+        }
+
+        class CatalogClient {
+            +getAllMedicines(Pageable): PageResponse
+            +getMedicineById(Long): MedicineDetailDTO
+            +createMedicine(MedicineRequest): MedicineDTO
+            +updateMedicine(Long, MedicineRequest): MedicineDTO
+            +deleteMedicine(Long): void
+            +getCategories(): List~CategoryDTO~
+            +getLowStockItems(): List~InventoryDTO~
+            +getExpiringBatches(int days): List~InventoryDTO~
+        }
+
+        class OrdersClient {
+            +getAllOrders(Pageable): PageResponse
+            +getOrderById(Long): OrderDTO
+            +updateOrderStatus(Long, OrderStatus): OrderDTO
+            +getRecentOrders(int limit): List~OrderSummaryDTO~
+        }
+
+        class DashboardDTO {
+            +long totalOrders
+            +long pendingOrders
+            +long completedOrders
+            +BigDecimal totalRevenue
+            +long pendingPrescriptions
+            +long lowStockItems
+            +long expiringBatches
+        }
+
+        class AdminUserPrincipal {
+            +Long userId
+            +String email
+            +String name
+            +Role role
+        }
+
+        class JwtHeaderAuthenticationFilter {
+            +doFilterInternal()
+        }
+
+        class AdminSecurityConfig {
+            +SecurityFilterChain filterChain()
+            +AuthenticationManager authenticationManager()
+        }
+
+        class OpenApiConfig {
+            +OpenAPI customOpenAPI()
+        }
+    }
+
+    AdminController --> DashboardService
+    AdminController --> CatalogClient
+    AdminController --> OrdersClient
+
+    DashboardService --> DashboardDTO
+    DashboardService --> CatalogClient
+    DashboardService --> OrdersClient
+
+    JwtHeaderAuthenticationFilter --> AdminUserPrincipal
+    AdminSecurityConfig --> JwtHeaderAuthenticationFilter
+    OpenApiConfig ..> AdminController

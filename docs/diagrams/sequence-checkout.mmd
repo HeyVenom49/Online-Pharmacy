@@ -1,0 +1,119 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as Frontend
+    participant GW as API Gateway
+    participant ORD as Orders Service
+    participant CAT as Catalog Service
+    participant ID as Identity Service
+    participant MQ as RabbitMQ
+    participant NOT as Notifications
+    participant PG as PostgreSQL
+
+    alt Add to Cart
+        User->>FE: Click "Add to Cart"
+        alt Without Prescription
+            FE->>GW: POST /api/orders/cart/items { medicineId, quantity }
+            GW->>ORD: Forward request
+            ORD->>CAT: Check medicine availability
+            CAT-->>ORD: Return stock info
+            ORD->>ORD: Create/Update CartItem
+            ORD->>PG: Save cart state
+            ORD-->>GW: Return updated cart
+            GW-->>FE: Return cart
+            FE->>FE: Update cart store
+        else Medicine requires Prescription
+            FE->>FE: Prompt user to upload prescription
+            User->>FE: Upload prescription image
+            FE->>GW: POST /api/catalog/prescriptions/upload
+            GW->>CAT: Forward to Catalog
+            CAT->>CAT: Store prescription file
+            CAT->>PG: Save Prescription record (PENDING)
+            CAT-->>GW: Return prescriptionId
+            GW-->>FE: Return prescriptionId
+            FE->>GW: POST /api/orders/cart/items { medicineId, quantity, prescriptionId }
+            GW->>ORD: Forward request
+            ORD->>CAT: Validate prescription
+            CAT-->>ORD: Return prescription status
+            ORD->>PG: Save cart with prescriptionId
+            ORD-->>GW: Return cart
+            GW-->>FE: Return cart
+        end
+    end
+
+    alt Checkout Flow
+        User->>FE: Click "Proceed to Checkout"
+        FE->>GW: GET /api/orders/cart
+        GW->>ORD: Get cart
+        ORD-->>GW: Return cart details
+        GW-->>FE: Return cart
+        FE->>FE: Display checkout page
+
+        alt Validate Prescriptions (if any)
+            ORD->>CAT: Check prescription status
+            CAT-->>ORD: Return status (PENDING/APPROVED/REJECTED)
+            alt Any prescription rejected
+                ORD-->>FE: Return error "Prescription required"
+            end
+        end
+
+        User->>FE: Fill address & delivery slot
+        FE->>GW: POST /api/orders/checkout
+        GW->>ORD: Process checkout
+        ORD->>ORD: Validate cart items
+        ORD->>CAT: Reserve inventory
+        CAT->>PG: Update inventory quantity
+        CAT-->>ORD: Inventory reserved
+        ORD->>ORD: Calculate totals
+        ORD->>PG: Create Order (PAYMENT_PENDING)
+        ORD->>MQ: Publish OrderPlacedEvent
+        MQ-->>NOT: Deliver event
+        NOT->>NOT: Send order confirmation email
+        ORD-->>GW: Return Order
+        GW-->>FE: Return Order
+        FE->>FE: Redirect to payment
+    end
+
+    alt Payment
+        User->>FE: Select payment method
+        FE->>GW: POST /api/orders/{orderId}/payment
+        GW->>ORD: Process payment
+        alt Payment Success
+            ORD->>ORD: Update Payment status = SUCCESS
+            ORD->>ORD: Update Order status = PAID
+            ORD->>PG: Save payment record
+            ORD->>PG: Update order status
+            ORD->>MQ: Publish PaymentConfirmedEvent
+            MQ-->>NOT: Deliver event
+            NOT->>NOT: Send payment confirmation email
+            ORD-->>GW: Return Payment
+            GW-->>FE: Return success
+            FE->>FE: Show success page
+        else Payment Failed
+            ORD->>ORD: Update Payment status = FAILED
+            ORD->>ORD: Update Order status = PAYMENT_FAILED
+            ORD->>CAT: Release reserved inventory
+            CAT->>PG: Restore inventory quantity
+            CAT-->>ORD: Inventory released
+            ORD-->>GW: Return Payment
+            GW-->>FE: Return failure
+            FE->>FE: Show error + retry option
+        end
+    end
+
+    alt Order Cancellation
+        User->>FE: Click "Cancel Order"
+        FE->>GW: POST /api/orders/{orderId}/cancel
+        GW->>ORD: Cancel order
+        ORD->>ORD: Validate cancel eligibility
+        ORD->>ORD: Update Order status = CUSTOMER_CANCELLED
+        ORD->>CAT: Release reserved inventory
+        CAT->>PG: Restore inventory quantity
+        CAT-->>ORD: Inventory released
+        ORD->>MQ: Publish OrderCancelledEvent
+        MQ-->>NOT: Deliver event
+        NOT->>NOT: Send cancellation email
+        ORD-->>GW: Return updated Order
+        GW-->>FE: Return success
+        FE->>FE: Show cancellation confirmation
+    end
