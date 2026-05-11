@@ -1,0 +1,107 @@
+graph TB
+    subgraph Root["📁 Online-Pharmacy (Root)"]
+        readme(["README.md"])
+    end
+
+    subgraph Backend["📁 online-pharmacy/ (Maven Multi-Module)"]
+        subgraph RootPom["Root POM (pom.xml)"]
+            rootpom(["groupId: com.pharmacy\nartifactId: online-pharmacy"])
+        end
+
+        subgraph Parent["pharmacy-parent/ (Parent POM)"]
+            parent(["Spring Boot 3.2.0\nJava 17\nSpring Cloud 2023.0.0"])
+        end
+
+        subgraph InfrastructureModules["🔧 Infrastructure Modules"]
+            Eureka["📦 pharmacy-eureka/\nService Registry\nPort: 8761"]
+            Config["📦 pharmacy-config/\nConfig Server\nPort: 8888"]
+            Common["📦 pharmacy-common/\nShared Code"]
+        end
+
+        subgraph Gateway["🚪 pharmacy-gateway/\nAPI Gateway\nPort: 8080"]
+            gw(["Spring Cloud Gateway\nJWT Auth\nRate Limiting"])
+        end
+
+        subgraph BusinessServices["⚙️ Business Microservices"]
+            Identity["📦 pharmacy-identity/\nAuth Service\nPort: 8081"]
+            Catalog["📦 pharmacy-catalog/\nCatalog Service\nPort: 8082"]
+            Orders["📦 pharmacy-orders/\nOrders Service\nPort: 8083"]
+            Admin["📦 pharmacy-admin/\nAdmin Service\nPort: 8084"]
+            Notifications["📦 pharmacy-notifications/\nNotifications\nPort: 8085"]
+        end
+
+        subgraph Docker["🐳 Docker"]
+            docker(["docker-compose.yml\nDockerfile"])
+        end
+
+        subgraph Docs["📚 docs/"]
+            diagrams(["📊 diagrams/"])
+            technical(["TECHNICAL_DOCUMENTATION.md"])
+        end
+    end
+
+    subgraph Frontend["📁 online-pharmacy-frontend/ (React)"]
+        subgraph FEConfig["Config"]
+            pkg(["package.json\nReact 19, Vite, TypeScript"])
+            vite(["vite.config.ts"])
+            tsconfig(["tsconfig.json"])
+        end
+
+        subgraph FESrc["src/"]
+            pages(["📄 pages/\n22 page components"])
+            components(["🧩 components/\nUI components"])
+            api(["🔌 api/\n6 API modules"])
+            store(["💾 store/\n4 Zustand stores"])
+            hooks(["⚓ hooks/\n4 custom hooks"])
+            layouts(["🎨 layouts/\nLayout, AdminLayout"])
+            types(["📋 types/\nTypeScript definitions"])
+            lib(["📚 lib/\napiClient, utils"])
+            context(["🎯 context/\nToastContext"])
+        end
+    end
+
+    rootpom --> Parent
+    rootpom --> Eureka
+    rootpom --> Config
+    rootpom --> Common
+    rootpom --> Gateway
+    rootpom --> Identity
+    rootpom --> Catalog
+    rootpom --> Orders
+    rootpom --> Admin
+    rootpom --> Notifications
+
+    Parent --> Common
+    Parent --> InfrastructureModules
+
+    Common --> Identity
+    Common --> Catalog
+    Common --> Orders
+    Common --> Admin
+    Common --> Notifications
+
+    Gateway --> Identity
+    Gateway --> Catalog
+    Gateway --> Orders
+    Gateway --> Admin
+    Gateway --> Eureka
+    Gateway --> Config
+
+    Notifications -.->|"RabbitMQ"| RabbitMQ["🐇 RabbitMQ\n:5672"]
+    Identity -.-> RabbitMQ
+    Catalog -.-> RabbitMQ
+    Orders -.-> RabbitMQ
+
+    Identity -->|"auth_db"| PostgreSQL["🐘 PostgreSQL\n:5432"]
+    Catalog -->|"catalog_db"| PostgreSQL
+    Orders -->|"order_db"| PostgreSQL
+    Admin -->|"admin_db"| PostgreSQL
+
+    Identity --> Redis["📦 Redis\n:6379"]
+    Catalog --> Redis
+    Orders --> Redis
+
+    readme -.->|"references"| Backend
+    readme -.->|"references"| Frontend
+
+    Frontend -->|"HTTP :8080"| Backend

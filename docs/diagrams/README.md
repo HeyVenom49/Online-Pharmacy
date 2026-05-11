@@ -9,6 +9,7 @@ This directory contains Mermaid UML diagrams for the Online Pharmacy system.
 |------|-------------|
 | `hld-system-context.mmd` | System context with users, external services, and infrastructure |
 | `hld-microservices.mmd` | Detailed microservices architecture with all services and infrastructure |
+| `project-structure.mmd` | Full project structure showing Maven modules and frontend components |
 
 ### Low-Level Design (LLD)
 | File | Description |
