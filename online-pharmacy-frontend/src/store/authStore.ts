@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { User, SignupRequest } from '../types';
-import authApi from '../api/auth';
-import { getErrorMessage } from '../lib/errorMessage';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { User, SignupRequest } from "../types";
+import authApi from "../api/auth";
+import { getErrorMessage } from "../lib/errorMessage";
 
 interface AuthState {
   user: User | null;
@@ -10,23 +10,35 @@ interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<{ requiresOtp: boolean; email?: string }>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<{ requiresOtp: boolean; email?: string }>;
   loginWithOtp: (email: string, otpCode: string) => Promise<User>;
   signup: (
     name: string,
     email: string,
     password: string,
-    mobile: string
+    mobile: string,
   ) => Promise<{ requiresOtp: boolean; email?: string }>;
-  signupWithOtp: (name: string, email: string, password: string, mobile: string) => Promise<void>;
+  signupWithOtp: (
+    name: string,
+    email: string,
+    password: string,
+    mobile: string,
+  ) => Promise<void>;
   verifySignupOtp: (
     email: string,
     otpCode: string,
     name: string,
     password: string,
-    mobile: string
+    mobile: string,
   ) => Promise<void>;
-  resetPassword: (email: string, otpCode: string, newPassword: string) => Promise<void>;
+  resetPassword: (
+    email: string,
+    otpCode: string,
+    newPassword: string,
+  ) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
@@ -60,12 +72,12 @@ export const useAuthStore = create<AuthState>()(
             id: response.userId,
             name: response.name,
             email: response.email,
-            mobile: response.mobile || '',
+            mobile: response.mobile || "",
             role: response.role,
-            status: 'ACTIVE',
+            status: "ACTIVE",
           };
-          localStorage.setItem('token', response.token || '');
-          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem("token", response.token || "");
+          localStorage.setItem("user", JSON.stringify(user));
           set({
             user,
             token: response.token,
@@ -75,7 +87,7 @@ export const useAuthStore = create<AuthState>()(
           return { requiresOtp: false };
         } catch (error: unknown) {
           set({
-            error: getErrorMessage(error, 'Login failed'),
+            error: getErrorMessage(error, "Login failed"),
             loading: false,
           });
           throw error;
@@ -85,19 +97,19 @@ export const useAuthStore = create<AuthState>()(
       loginWithOtp: async (email: string, otpCode: string) => {
         set({ loading: true, error: null });
         try {
-          await authApi.verifyLoginOtp({ email, otpCode, otpType: 'LOGIN' });
+          await authApi.verifyLoginOtp({ email, otpCode, otpType: "LOGIN" });
           const response = await authApi.completeOtpLogin(email);
 
           const user: User = {
             id: response.userId,
             name: response.name,
             email: response.email,
-            mobile: response.mobile || '',
+            mobile: response.mobile || "",
             role: response.role,
-            status: 'ACTIVE',
+            status: "ACTIVE",
           };
-          localStorage.setItem('token', response.token || '');
-          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem("token", response.token || "");
+          localStorage.setItem("user", JSON.stringify(user));
           set({
             user,
             token: response.token,
@@ -107,36 +119,56 @@ export const useAuthStore = create<AuthState>()(
           return user;
         } catch (error: unknown) {
           set({
-            error: getErrorMessage(error, 'OTP verification failed'),
+            error: getErrorMessage(error, "OTP verification failed"),
             loading: false,
           });
           throw error;
         }
       },
 
-      signup: async (name: string, email: string, password: string, mobile: string) => {
+      signup: async (
+        name: string,
+        email: string,
+        password: string,
+        mobile: string,
+      ) => {
         set({ loading: true, error: null });
         try {
-          await authApi.signupWithOtp({ name, email, password, mobile } as SignupRequest);
+          await authApi.signupWithOtp({
+            name,
+            email,
+            password,
+            mobile,
+          } as SignupRequest);
           set({ loading: false });
           return { requiresOtp: true, email };
         } catch (error: unknown) {
           set({
-            error: getErrorMessage(error, 'Signup failed'),
+            error: getErrorMessage(error, "Signup failed"),
             loading: false,
           });
           throw error;
         }
       },
 
-      signupWithOtp: async (name: string, email: string, password: string, mobile: string) => {
+      signupWithOtp: async (
+        name: string,
+        email: string,
+        password: string,
+        mobile: string,
+      ) => {
         set({ loading: true, error: null });
         try {
-          await authApi.signupWithOtp({ name, email, password, mobile } as SignupRequest);
+          await authApi.signupWithOtp({
+            name,
+            email,
+            password,
+            mobile,
+          } as SignupRequest);
           set({ loading: false });
         } catch (error: unknown) {
           set({
-            error: getErrorMessage(error, 'Failed to send OTP'),
+            error: getErrorMessage(error, "Failed to send OTP"),
             loading: false,
           });
           throw error;
@@ -148,7 +180,7 @@ export const useAuthStore = create<AuthState>()(
         otpCode: string,
         name: string,
         password: string,
-        mobile: string
+        mobile: string,
       ) => {
         set({ loading: true, error: null });
         try {
@@ -164,12 +196,12 @@ export const useAuthStore = create<AuthState>()(
             id: response.userId,
             name: response.name,
             email: response.email,
-            mobile: response.mobile || '',
+            mobile: response.mobile || "",
             role: response.role,
-            status: 'ACTIVE',
+            status: "ACTIVE",
           };
-          localStorage.setItem('token', response.token || '');
-          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem("token", response.token || "");
+          localStorage.setItem("user", JSON.stringify(user));
           set({
             user,
             token: response.token,
@@ -178,7 +210,7 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error: unknown) {
           set({
-            error: getErrorMessage(error, 'OTP verification failed'),
+            error: getErrorMessage(error, "OTP verification failed"),
             loading: false,
           });
           throw error;
@@ -188,25 +220,32 @@ export const useAuthStore = create<AuthState>()(
       requestPasswordReset: async (email: string) => {
         set({ loading: true, error: null });
         try {
-          await authApi.requestPasswordReset({ email, otpType: 'PASSWORD_RESET' });
+          await authApi.requestPasswordReset({
+            email,
+            otpType: "PASSWORD_RESET",
+          });
           set({ loading: false });
         } catch (error: unknown) {
           set({
-            error: getErrorMessage(error, 'Failed to send reset OTP'),
+            error: getErrorMessage(error, "Failed to send reset OTP"),
             loading: false,
           });
           throw error;
         }
       },
 
-      resetPassword: async (email: string, otpCode: string, newPassword: string) => {
+      resetPassword: async (
+        email: string,
+        otpCode: string,
+        newPassword: string,
+      ) => {
         set({ loading: true, error: null });
         try {
           await authApi.resetPassword({ email, otpCode, newPassword });
           set({ loading: false });
         } catch (error: unknown) {
           set({
-            error: getErrorMessage(error, 'Password reset failed'),
+            error: getErrorMessage(error, "Password reset failed"),
             loading: false,
           });
           throw error;
@@ -214,8 +253,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
         set({ user: null, token: null, isAuthenticated: false });
       },
 
@@ -228,12 +267,12 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       partialize: (state) => ({
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );
